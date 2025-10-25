@@ -180,3 +180,4 @@ const ProductionPlanCard: React.FC<ProductionPlanCardProps> = ({ plan }) => {
 }
 
 export default ProductionPlanCard
+

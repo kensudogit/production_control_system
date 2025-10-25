@@ -3,9 +3,15 @@ export default {
   content: [
     "./index.html",
     "./src/**/*.{js,ts,jsx,tsx}",
+    "./src/**/*.html",
   ],
+  important: true,
   theme: {
     extend: {
+      // Forced Colors Mode 対応
+      screens: {
+        'forced-colors': { 'raw': '(forced-colors: active)' },
+      },
       colors: {
         primary: {
           50: '#eff6ff',

@@ -1,15 +1,11 @@
 import '@testing-library/jest-dom'
 import { cleanup } from '@testing-library/react'
-import { afterEach, beforeAll, afterAll } from 'vitest'
-import { server } from './mocks/server'
+import { afterEach, beforeAll, afterAll, vi } from 'vitest'
 
-// MSWサーバーのセットアップ
-beforeAll(() => server.listen())
+// テスト後のクリーンアップ
 afterEach(() => {
   cleanup()
-  server.resetHandlers()
 })
-afterAll(() => server.close())
 
 // グローバルなテスト設定
 Object.defineProperty(window, 'matchMedia', {

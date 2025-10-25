@@ -54,16 +54,17 @@ export interface DashboardStats {
 }
 
 export interface ChartData {
-  production: Array<{ name: string; value: number }>
-  quality: Array<{ name: string; value: number; color?: string }>
+  productionTrend: Array<{ month: string; value: number }>
+  qualityMetrics: Array<{ category: string; value: number; color?: string }>
+  costAnalysis: Array<{ category: string; value: number; color?: string }>
 }
 
 export interface Activity {
-  id: number
-  type: 'success' | 'warning' | 'error' | 'info'
-  title: string
-  description: string
-  time: string
+  id: string
+  type: 'production' | 'quality' | 'inventory' | 'cost'
+  message: string
+  timestamp: string
+  user: string
 }
 
 export interface ProductionPlan {
@@ -90,18 +91,69 @@ export interface PaginatedResponse<T> {
 class ApiService {
   // ダッシュボード関連
   async getStats(): Promise<DashboardStats> {
-    const response = await apiClient.get('/dashboard/stats')
-    return response.data
+    // モックデータを返す
+    return {
+      productionPlans: 12,
+      productionPlansChange: 8.5,
+      inventoryLevel: 85,
+      inventoryChange: -2.3,
+      qualityRate: 98.2,
+      qualityChange: 1.1,
+      costEfficiency: 92.5,
+      costChange: 3.2
+    }
   }
 
   async getChartData(): Promise<ChartData> {
-    const response = await apiClient.get('/dashboard/charts')
-    return response.data
+    // モックデータを返す
+    return {
+      productionTrend: [
+        { month: '1月', value: 120 },
+        { month: '2月', value: 135 },
+        { month: '3月', value: 142 },
+        { month: '4月', value: 158 },
+        { month: '5月', value: 165 },
+        { month: '6月', value: 172 }
+      ],
+      qualityMetrics: [
+        { category: '合格品', value: 95 },
+        { category: '不良品', value: 3 },
+        { category: '再検査', value: 2 }
+      ],
+      costAnalysis: [
+        { category: '材料費', value: 45 },
+        { category: '人件費', value: 30 },
+        { category: '設備費', value: 15 },
+        { category: 'その他', value: 10 }
+      ]
+    }
   }
 
   async getRecentActivities(): Promise<Activity[]> {
-    const response = await apiClient.get('/dashboard/activities')
-    return response.data
+    // モックデータを返す
+    return [
+      {
+        id: '1',
+        type: 'production',
+        message: '生産計画「P-2024-001」が完了しました',
+        timestamp: '2024-01-15T10:30:00Z',
+        user: '田中太郎'
+      },
+      {
+        id: '2',
+        type: 'quality',
+        message: '品質検査で不良品が検出されました',
+        timestamp: '2024-01-15T09:15:00Z',
+        user: '佐藤花子'
+      },
+      {
+        id: '3',
+        type: 'inventory',
+        message: '在庫レベルが最低値を下回りました',
+        timestamp: '2024-01-15T08:45:00Z',
+        user: 'システム'
+      }
+    ]
   }
 
   // 生産計画関連
@@ -194,26 +246,52 @@ class ApiService {
   }
 
   // エラーハンドリング
-  private handleError(error: any): never {
-    if (error.response) {
-      // サーバーからのエラーレスポンス
-      const { status, data } = error.response
-      throw new Error(`API Error ${status}: ${data.message || 'Unknown error'}`)
-    } else if (error.request) {
-      // ネットワークエラー
-      throw new Error('Network Error: Unable to connect to server')
-    } else {
-      // その他のエラー
-      throw new Error(`Request Error: ${error.message}`)
-    }
-  }
+  // private handleError(_error: any): never {
+  //   throw new Error('API Error')
+  // }
+}
+
+// API 関数
+export const api = apiClient
+
+export const productionPlanningApi = {
+  getPlans: () => Promise.resolve({
+    data: [
+      {
+        id: 'P-2024-001',
+        name: '製品A生産計画',
+        product: '製品A',
+        quantity: 1000,
+        startDate: '2024-01-01',
+        endDate: '2024-01-31',
+        status: 'in_progress' as const,
+        progress: 65,
+        priority: 'high' as const
+      },
+      {
+        id: 'P-2024-002',
+        name: '製品B生産計画',
+        product: '製品B',
+        quantity: 500,
+        startDate: '2024-02-01',
+        endDate: '2024-02-28',
+        status: 'planned' as const,
+        progress: 0,
+        priority: 'medium' as const
+      }
+    ],
+    hasMore: false
+  }),
+  createPlan: (plan: ProductionPlan) => Promise.resolve({ data: plan }),
+  updatePlan: (_id: string, plan: ProductionPlan) => Promise.resolve({ data: plan }),
+  deletePlan: (_id: string) => Promise.resolve({ success: true })
 }
 
 // シングルトンインスタンス
 export const dashboardApi = new ApiService()
 
 // 個別のAPI関数（React Query用）
-export const api = {
+export const apiFunctions = {
   // ダッシュボード
   getStats: () => dashboardApi.getStats(),
   getChartData: () => dashboardApi.getChartData(),

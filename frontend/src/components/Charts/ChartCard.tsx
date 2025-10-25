@@ -6,7 +6,7 @@ interface ChartCardProps {
   title: string
   subtitle: string
   type: 'line' | 'pie' | 'bar'
-  data: Array<{ name: string; value: number; color?: string }>
+  data: Array<{ name?: string; month?: string; category?: string; value: number; color?: string }>
 }
 
 const ChartCard: React.FC<ChartCardProps> = ({ title, subtitle, type, data }) => {
@@ -97,3 +97,4 @@ const ChartCard: React.FC<ChartCardProps> = ({ title, subtitle, type, data }) =>
 }
 
 export default ChartCard
+

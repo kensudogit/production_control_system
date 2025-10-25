@@ -1,10 +1,10 @@
-import React, { memo, useMemo, useCallback, useState, useEffect, useRef } from 'react'
-import { FixedSizeList as List, FixedSizeGrid as Grid } from 'react-window'
-import { motion, AnimatePresence } from 'framer-motion'
+import React, { memo, useMemo, useState } from 'react'
+// import { FixedSizeList as List, FixedSizeGrid as Grid } from 'react-window'
+import { motion } from 'framer-motion'
 import { Plus, Search, Filter, Download, Calendar, Target, Users, Clock } from 'lucide-react'
 import ProductionPlanCard from '../components/UI/ProductionPlanCard'
 import ProductionPlanModal from '../components/Forms/ProductionPlanModal'
-import { useQuery, useInfiniteQuery } from 'react-query'
+import { useInfiniteQuery } from 'react-query'
 import { productionPlanningApi } from '../services/api'
 
 // 仮想化されたリストアイテム
@@ -26,27 +26,19 @@ const ProductionPlanning: React.FC = memo(() => {
   const [searchTerm, setSearchTerm] = useState('')
   const [filterStatus, setFilterStatus] = useState('all')
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
-  const listRef = useRef<List>(null)
+  // const listRef = useRef<any>(null)
 
   // 無限スクロールクエリ
   const {
     data,
-    fetchNextPage,
-    hasNextPage,
-    isFetchingNextPage,
     isLoading,
     error
   } = useInfiniteQuery(
     ['production-plans', searchTerm, filterStatus],
-    ({ pageParam = 0 }) => productionPlanningApi.getPlans({
-      page: pageParam,
-      limit: 20,
-      search: searchTerm,
-      status: filterStatus
-    }),
+    () => productionPlanningApi.getPlans(),
     {
-      getNextPageParam: (lastPage, pages) => {
-        return lastPage.hasMore ? pages.length : undefined
+      getNextPageParam: (_lastPage, pages) => {
+        return pages.length < 10 ? pages.length : undefined
       },
       staleTime: 30000,
       cacheTime: 300000,
@@ -60,14 +52,14 @@ const ProductionPlanning: React.FC = memo(() => {
   }, [data])
 
   // 検索とフィルタリングのデバウンス
-  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState(searchTerm)
+  // const [debouncedSearchTerm, setDebouncedSearchTerm] = useState(searchTerm)
   
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedSearchTerm(searchTerm)
-    }, 300)
-    return () => clearTimeout(timer)
-  }, [searchTerm])
+  // useEffect(() => {
+  //   const timer = setTimeout(() => {
+  //     setDebouncedSearchTerm(searchTerm)
+  //   }, 300)
+  //   return () => clearTimeout(timer)
+  // }, [searchTerm])
 
   // 統計データ
   const stats = useMemo(() => [
@@ -78,11 +70,11 @@ const ProductionPlanning: React.FC = memo(() => {
   ], [])
 
   // 無限スクロールハンドラー
-  const handleScroll = useCallback(({ scrollTop, scrollHeight, clientHeight }: any) => {
-    if (scrollHeight - scrollTop - clientHeight < 100 && hasNextPage && !isFetchingNextPage) {
-      fetchNextPage()
-    }
-  }, [hasNextPage, isFetchingNextPage, fetchNextPage])
+  // const handleScroll = useCallback(({ scrollTop, scrollHeight, clientHeight }: any) => {
+  //   if (scrollHeight - scrollTop - clientHeight < 100 && hasNextPage && !isFetchingNextPage) {
+  //     fetchNextPage()
+  //   }
+  // }, [hasNextPage, isFetchingNextPage, fetchNextPage])
 
   // エラーハンドリング
   if (error) {
@@ -241,45 +233,24 @@ const ProductionPlanning: React.FC = memo(() => {
             <>
               {viewMode === 'grid' ? (
                 <div className="h-[600px]">
-                  <Grid
-                    columnCount={3}
-                    columnWidth={400}
-                    height={600}
-                    rowCount={Math.ceil(allPlans.length / 3)}
-                    rowHeight={300}
-                    width={1200}
-                    onScroll={handleScroll}
-                  >
-                    {({ columnIndex, rowIndex, style }) => {
-                      const index = rowIndex * 3 + columnIndex
-                      const plan = allPlans[index]
-                      if (!plan) return null
-                      
-                      return (
-                        <div style={style} className="p-2">
-                          <ProductionPlanCard plan={plan} />
-                        </div>
-                      )
-                    }}
-                  </Grid>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {allPlans.map((plan, index) => (
+                      <ProductionPlanCard key={plan.id || index} plan={plan} />
+                    ))}
+                  </div>
                 </div>
               ) : (
-                <div className="h-[600px]">
-                  <List
-                    ref={listRef}
-                    height={600}
-                    itemCount={allPlans.length}
-                    itemSize={200}
-                    onScroll={handleScroll}
-                    itemData={allPlans}
-                  >
-                    {VirtualizedItem}
-                  </List>
+                <div className="h-[600px] overflow-y-auto">
+                  <div className="space-y-4">
+                    {allPlans.map((plan, index) => (
+                      <ProductionPlanCard key={plan.id || index} plan={plan} />
+                    ))}
+                  </div>
                 </div>
               )}
               
               {/* Loading indicator */}
-              {isFetchingNextPage && (
+              {false && (
                 <div className="flex items-center justify-center py-4">
                   <div className="loading-spinner h-6 w-6"></div>
                   <span className="ml-2 text-sm text-secondary-600">読み込み中...</span>
@@ -294,7 +265,7 @@ const ProductionPlanning: React.FC = memo(() => {
       <ProductionPlanModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        onSave={(plan) => {
+        onSave={(plan: any) => {
           console.log('Saving plan:', plan)
           setIsModalOpen(false)
         }}

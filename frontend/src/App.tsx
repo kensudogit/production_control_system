@@ -1,4 +1,4 @@
-import React from 'react'
+// React import removed as it's not used
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from 'react-query'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -10,6 +10,7 @@ import ProcessManagement from './pages/ProcessManagement'
 import QualityManagement from './pages/QualityManagement'
 import CostManagement from './pages/CostManagement'
 import DemandForecasting from './pages/DemandForecasting'
+import { useAccessibility, SkipLink } from './components/Accessibility/AccessibilityComponents'
 import './index.css'
 
 const queryClient = new QueryClient({
@@ -34,10 +35,17 @@ const pageTransition = {
 }
 
 function App() {
+  // アクセシビリティ機能を有効化
+  useAccessibility()
+
   return (
     <QueryClientProvider client={queryClient}>
       <Router>
         <div className="min-h-screen bg-gradient-to-br from-secondary-50 via-white to-primary-50">
+          {/* スキップリンク */}
+          <SkipLink href="#main-content">メインコンテンツにスキップ</SkipLink>
+          <SkipLink href="#navigation">ナビゲーションにスキップ</SkipLink>
+          
           <Layout>
             <AnimatePresence mode="wait">
               <Routes>

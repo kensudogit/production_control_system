@@ -1,13 +1,13 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap');
-
 @layer base {
   * {
-    @apply border-border;
+    @apply border-secondary-200;
   }
   
   body {
@@ -21,44 +21,160 @@
 }
 
 @layer components {
+  /* モダンなグラデーション背景 */
+  .gradient-bg-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  }
+  
+  .gradient-bg-secondary {
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  }
+  
+  .gradient-bg-success {
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+  }
+  
+  .gradient-bg-warning {
+    background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+  }
+  
+  .gradient-bg-danger {
+    background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+  }
+  
+  .gradient-bg-dark {
+    background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+  }
+  
+  .gradient-bg-light {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  }
+  
+  /* ガラスモーフィズム効果 */
+  .glass-effect {
+    background: rgba(255, 255, 255, 0.25);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+  }
+  
+  .glass-effect-dark {
+    background: rgba(0, 0, 0, 0.25);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+  }
+  
+  /* ネオモーフィズム効果 */
+  .neomorphic {
+    background: #e0e5ec;
+    box-shadow: 9px 9px 16px #a3b1c6, -9px -9px 16px #ffffff;
+  }
+  
+  .neomorphic-inset {
+    background: #e0e5ec;
+    box-shadow: inset 9px 9px 16px #a3b1c6, inset -9px -9px 16px #ffffff;
+  }
+  
+  /* Forced Colors Mode (新しい標準) 対応 */
+  @media (forced-colors: active) {
+    .btn {
+      border: 1px solid ButtonText;
+      background-color: ButtonFace;
+      color: ButtonText;
+    }
+    
+    .btn-primary {
+      background-color: Highlight;
+      color: HighlightText;
+      border-color: Highlight;
+    }
+    
+    .btn-secondary {
+      background-color: ButtonFace;
+      color: ButtonText;
+      border-color: ButtonText;
+    }
+    
+    .card {
+      border: 1px solid ButtonText;
+      background-color: Canvas;
+      color: CanvasText;
+    }
+    
+    .input {
+      border: 1px solid FieldText;
+      background-color: Field;
+      color: FieldText;
+    }
+  }
+
   .btn {
-    @apply inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none;
+    @apply inline-flex items-center justify-center rounded-xl px-6 py-3 text-sm font-semibold transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none transform hover:scale-105 active:scale-95;
   }
   
   .btn-primary {
-    @apply btn bg-primary-600 text-white hover:bg-primary-700 focus:ring-primary-500 shadow-sm hover:shadow-md;
+    @apply btn gradient-bg-primary text-white hover:shadow-lg hover:shadow-blue-500/25 focus:ring-blue-500;
   }
   
   .btn-secondary {
-    @apply btn bg-secondary-100 text-secondary-900 hover:bg-secondary-200 focus:ring-secondary-500 border border-secondary-300;
+    @apply btn glass-effect text-gray-700 hover:bg-white/30 focus:ring-gray-500 border border-white/20;
   }
   
   .btn-success {
-    @apply btn bg-success-600 text-white hover:bg-success-700 focus:ring-success-500 shadow-sm hover:shadow-md;
+    @apply btn gradient-bg-success text-white hover:shadow-lg hover:shadow-green-500/25 focus:ring-green-500;
   }
   
   .btn-warning {
-    @apply btn bg-warning-600 text-white hover:bg-warning-700 focus:ring-warning-500 shadow-sm hover:shadow-md;
+    @apply btn gradient-bg-warning text-white hover:shadow-lg hover:shadow-yellow-500/25 focus:ring-yellow-500;
   }
   
   .btn-danger {
-    @apply btn bg-danger-600 text-white hover:bg-danger-700 focus:ring-danger-500 shadow-sm hover:shadow-md;
+    @apply btn gradient-bg-danger text-white hover:shadow-lg hover:shadow-red-500/25 focus:ring-red-500;
+  }
+  
+  .btn-sm {
+    @apply px-4 py-2 text-xs;
+  }
+  
+  .btn-lg {
+    @apply px-8 py-4 text-lg;
   }
   
   .card {
-    @apply bg-white rounded-xl shadow-soft border border-secondary-200 overflow-hidden;
+    @apply glass-effect rounded-2xl overflow-hidden transform hover:scale-105 transition-all duration-300 hover:shadow-2xl;
   }
   
   .card-header {
-    @apply px-6 py-4 border-b border-secondary-200 bg-secondary-50;
+    @apply px-8 py-6 border-b border-white/20 bg-gradient-to-r from-white/10 to-white/5;
   }
   
   .card-body {
-    @apply px-6 py-4;
+    @apply px-8 py-6;
   }
   
   .card-footer {
-    @apply px-6 py-4 border-t border-secondary-200 bg-secondary-50;
+    @apply px-8 py-6 border-t border-white/20 bg-gradient-to-r from-white/5 to-white/10;
+  }
+  
+  .card-gradient {
+    @apply gradient-bg-primary text-white;
+  }
+  
+  .card-gradient-secondary {
+    @apply gradient-bg-secondary text-white;
+  }
+  
+  .card-gradient-success {
+    @apply gradient-bg-success text-white;
+  }
+  
+  .card-gradient-warning {
+    @apply gradient-bg-warning text-white;
+  }
+  
+  .card-gradient-danger {
+    @apply gradient-bg-danger text-white;
   }
   
   .input {

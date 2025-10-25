@@ -1,14 +1,11 @@
-import React, { memo, useMemo, useCallback, useState, useEffect } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import React, { memo, useMemo, useCallback, useState } from 'react'
+import { motion } from 'framer-motion'
 import { 
   TrendingUp, 
   Package, 
   CheckCircle, 
   AlertTriangle,
   DollarSign,
-  Users,
-  Clock,
-  Target,
   RefreshCw
 } from 'lucide-react'
 import StatsCard from '../components/UI/StatsCard'
@@ -49,7 +46,7 @@ const Dashboard: React.FC = memo(() => {
     }
   )
 
-  const { data: activities, isLoading: activitiesLoading } = useQuery(
+  const { isLoading: activitiesLoading } = useQuery(
     'dashboard-activities',
     dashboardApi.getRecentActivities,
     {
@@ -77,7 +74,7 @@ const Dashboard: React.FC = memo(() => {
         title: '在庫レベル',
         value: stats.inventoryLevel.toLocaleString(),
         change: `${stats.inventoryChange > 0 ? '+' : ''}${stats.inventoryChange}%`,
-        changeType: stats.inventoryChange > 0 ? 'negative' : 'positive' as const,
+        changeType: stats.inventoryChange > 0 ? 'negative' as const : 'positive' as const,
         icon: Package,
         color: 'text-warning-600',
         bgColor: 'bg-warning-50'
@@ -105,7 +102,7 @@ const Dashboard: React.FC = memo(() => {
 
   // メモ化されたチャートデータ
   const memoizedChartData = useMemo(() => {
-    if (!chartData) return { production: [], quality: [] }
+    if (!chartData) return { productionTrend: [], qualityMetrics: [], costAnalysis: [] }
     return chartData
   }, [chartData])
 
@@ -189,7 +186,7 @@ const Dashboard: React.FC = memo(() => {
         animate="visible"
         className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4"
       >
-        {memoizedStats.map((stat, index) => (
+        {memoizedStats.map((stat) => (
           <motion.div key={stat.title} variants={itemVariants}>
             <MemoizedStatsCard {...stat} />
           </motion.div>
@@ -208,7 +205,7 @@ const Dashboard: React.FC = memo(() => {
             title="生産実績トレンド"
             subtitle="過去30日間の生産実績"
             type="line"
-            data={memoizedChartData.production}
+            data={memoizedChartData.productionTrend}
           />
         </motion.div>
 
@@ -217,7 +214,7 @@ const Dashboard: React.FC = memo(() => {
             title="品質検査結果"
             subtitle="今月の品質検査状況"
             type="pie"
-            data={memoizedChartData.quality}
+            data={memoizedChartData.qualityMetrics}
           />
         </motion.div>
       </motion.div>

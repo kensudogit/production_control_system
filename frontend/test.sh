@@ -187,3 +187,4 @@ if [ "$1" = "help" ] || [ "$1" = "-h" ] || [ "$1" = "--help" ]; then
 else
     main $1
 fi
+

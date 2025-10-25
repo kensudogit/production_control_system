@@ -6,6 +6,7 @@
 
 - **現代的UI/UX**: Next.js + Vite + React + TypeScript + Tailwind CSS
 - **高性能**: React.memo、仮想化、レイジーローディング
+- **アクセシビリティ**: WCAG 2.1 AA準拠、Forced Colors Mode対応
 - **PWA対応**: Service Worker、オフライン機能
 - **マイクロサービス**: 独立したサービス群
 - **リアルタイム**: WebSocket通信
@@ -71,6 +72,69 @@
 - PostgreSQL 12 以上
 - Docker 20.10 以上
 - Docker Compose 2.0 以上
+- Vercel CLI（クラウドデプロイ用）
+
+### ☁️ Vercelクラウドデプロイ（最速）
+
+#### 1. Vercel CLIのインストール
+```bash
+npm install -g vercel
+```
+
+#### 2. Vercelにログイン
+```bash
+vercel login
+```
+
+#### 3. プロジェクトのデプロイ
+```bash
+# プレビューデプロイ
+./vercel-deploy.sh preview
+
+# 本番デプロイ
+./vercel-deploy.sh production
+```
+
+#### 4. カスタムドメインの設定
+```bash
+./vercel-deploy.sh domain your-domain.com
+```
+
+#### 5. アクセス
+- **本番URL**: https://production-control-system.vercel.app
+- **Vercel Dashboard**: https://vercel.com/dashboard
+- **Analytics**: https://vercel.com/analytics
+
+### ☁️ Vercel詳細設定
+
+#### Vercel機能
+- **Serverless Functions**: API エンドポイント
+- **Edge Functions**: グローバルCDN配信
+- **Analytics**: リアルタイム分析
+- **Speed Insights**: パフォーマンス監視
+- **Web Vitals**: Core Web Vitals追跡
+
+#### 環境変数設定
+```bash
+# Vercel Dashboard または CLI で設定
+vercel env add NODE_ENV production
+vercel env add NEXT_PUBLIC_API_URL https://your-api.vercel.app
+```
+
+#### カスタムドメイン
+```bash
+# ドメインの追加
+vercel domains add your-domain.com
+
+# SSL証明書の自動設定
+vercel domains verify your-domain.com
+```
+
+#### パフォーマンス最適化
+- **自動画像最適化**: WebP/AVIF変換
+- **コード分割**: 動的インポート
+- **キャッシュ戦略**: Edge Caching
+- **圧縮**: Gzip/Brotli圧縮
 
 ### 🐳 Docker環境での構築（推奨）
 

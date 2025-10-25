@@ -1,20 +1,6 @@
 import React, { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { 
-  BarChart3, 
-  Package, 
-  Settings, 
-  CheckCircle, 
-  DollarSign, 
-  TrendingUp,
-  Menu,
-  X,
-  Bell,
-  User,
-  Search,
-  Sun,
-  Moon
-} from 'lucide-react'
+// Icons removed as they're not used in this component
 import Sidebar from './Sidebar'
 import Navbar from './Navbar'
 
@@ -71,7 +57,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         />
 
         {/* Page Content */}
-        <main className="py-6">
+        <main id="main-content" className="py-6" role="main" aria-label="メインコンテンツ">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <motion.div
               initial={{ opacity: 0, y: 20 }}

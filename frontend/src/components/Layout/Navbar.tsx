@@ -105,3 +105,4 @@ const Navbar: React.FC<NavbarProps> = ({ onMenuClick, darkMode, onToggleDarkMode
 }
 
 export default Navbar
+
