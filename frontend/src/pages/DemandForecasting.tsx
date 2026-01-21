@@ -12,13 +12,30 @@ import {
   Zap,
   Activity,
   PieChart,
-  X
+  X,
+  Loader2
 } from 'lucide-react'
+import { getAdvancedOpenAIService, AIForecastRequest } from '../services/openai'
 
 const DemandForecasting: React.FC = () => {
   const [showAIModal, setShowAIModal] = useState(false)
   const [showPeriodModal, setShowPeriodModal] = useState(false)
   const [showTrendModal, setShowTrendModal] = useState(false)
+  const [isAILoading, setIsAILoading] = useState(false)
+  const [aiSettings, setAiSettings] = useState({
+    product: '製品A',
+    period: '3',
+    algorithm: 'arima',
+    confidenceThreshold: 80,
+    economicIndex: 105,
+    seasonality: 'high',
+    competitorActivity: 'stable',
+    marketTrend: 'growing',
+    productionCapacity: 2000,
+    inventoryLevel: 500,
+    leadTime: 14,
+    supplierReliability: 95
+  })
 
   const forecastData = [
     { 
@@ -112,9 +129,65 @@ const DemandForecasting: React.FC = () => {
     }
   }
 
-  const handleAIExecute = () => {
-    console.log('AI予測実行')
-    setShowAIModal(false)
+  const handleAIExecute = async () => {
+    setIsAILoading(true)
+    try {
+      const openAIService = getAdvancedOpenAIService('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')
+      
+      const request: AIForecastRequest = {
+        product: aiSettings.product,
+        period: `${aiSettings.period}ヶ月`,
+        algorithm: aiSettings.algorithm,
+        confidenceThreshold: aiSettings.confidenceThreshold,
+        historicalData: [
+          { date: '2024-01-01', demand: 1200, price: 1500, season: '冬', promotion: false, competitor: 'A社' },
+          { date: '2024-01-15', demand: 1350, price: 1500, season: '冬', promotion: true, competitor: 'A社' },
+          { date: '2024-02-01', demand: 1100, price: 1600, season: '冬', promotion: false, competitor: 'B社' },
+          { date: '2024-02-15', demand: 1400, price: 1600, season: '春', promotion: true, competitor: 'B社' },
+          { date: '2024-03-01', demand: 1300, price: 1550, season: '春', promotion: false, competitor: 'A社' }
+        ],
+        marketFactors: {
+          economicIndex: aiSettings.economicIndex,
+          seasonality: aiSettings.seasonality,
+          competitorActivity: aiSettings.competitorActivity,
+          marketTrend: aiSettings.marketTrend
+        },
+        businessContext: {
+          productionCapacity: aiSettings.productionCapacity,
+          inventoryLevel: aiSettings.inventoryLevel,
+          leadTime: aiSettings.leadTime,
+          supplierReliability: aiSettings.supplierReliability
+        }
+      }
+
+      const result = await openAIService.generateAdvancedForecast(request)
+      console.log('高度なAI予測結果:', result)
+      
+      // 詳細な結果表示
+      const message = `AI予測が完了しました！
+
+【予測精度】
+- MAPE: ${result.accuracyMetrics.mape.toFixed(1)}%
+- RMSE: ${result.accuracyMetrics.rmse.toFixed(1)}
+- 方向性精度: ${result.accuracyMetrics.directionalAccuracy.toFixed(1)}%
+
+【リスク分析】
+- 総合リスク: ${result.riskAnalysis.overallRisk}%
+- 供給リスク: ${result.riskAnalysis.supplyRisk}%
+- 需要リスク: ${result.riskAnalysis.demandRisk}%
+- 市場リスク: ${result.riskAnalysis.marketRisk}%
+
+詳細な結果はコンソールで確認してください。`
+      
+      alert(message)
+      
+    } catch (error) {
+      console.error('高度なAI予測エラー:', error)
+      alert('AI予測の実行中にエラーが発生しました。詳細はコンソールで確認してください。')
+    } finally {
+      setIsAILoading(false)
+      setShowAIModal(false)
+    }
   }
 
   const handlePeriodSet = () => {
@@ -450,8 +523,25 @@ const DemandForecasting: React.FC = () => {
                 <div className="card-body">
                   <div className="space-y-4">
                     <div>
+                      <label className="label">製品</label>
+                      <select 
+                        className="input"
+                        value={aiSettings.product}
+                        onChange={(e) => setAiSettings({ ...aiSettings, product: e.target.value })}
+                      >
+                        <option value="製品A">製品A</option>
+                        <option value="製品B">製品B</option>
+                        <option value="製品C">製品C</option>
+                        <option value="製品D">製品D</option>
+                      </select>
+                    </div>
+                    <div>
                       <label className="label">予測期間</label>
-                      <select className="input">
+                      <select 
+                        className="input"
+                        value={aiSettings.period}
+                        onChange={(e) => setAiSettings({ ...aiSettings, period: e.target.value })}
+                      >
                         <option value="1">1ヶ月</option>
                         <option value="3">3ヶ月</option>
                         <option value="6">6ヶ月</option>
@@ -460,7 +550,11 @@ const DemandForecasting: React.FC = () => {
                     </div>
                     <div>
                       <label className="label">アルゴリズム</label>
-                      <select className="input">
+                      <select 
+                        className="input"
+                        value={aiSettings.algorithm}
+                        onChange={(e) => setAiSettings({ ...aiSettings, algorithm: e.target.value })}
+                      >
                         <option value="arima">ARIMA</option>
                         <option value="lstm">LSTM</option>
                         <option value="prophet">Prophet</option>
@@ -473,10 +567,109 @@ const DemandForecasting: React.FC = () => {
                         type="number" 
                         className="input" 
                         placeholder="80"
-                        defaultValue="80"
+                        value={aiSettings.confidenceThreshold}
+                        onChange={(e) => setAiSettings({ ...aiSettings, confidenceThreshold: parseInt(e.target.value) })}
                         min="50"
                         max="99"
                       />
+                    </div>
+                    <div className="border-t pt-4">
+                      <h4 className="text-sm font-semibold text-gray-700 mb-3">市場要因</h4>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="label">経済指標</label>
+                          <input 
+                            type="number" 
+                            className="input" 
+                            value={aiSettings.economicIndex}
+                            onChange={(e) => setAiSettings({ ...aiSettings, economicIndex: parseInt(e.target.value) })}
+                            placeholder="105"
+                          />
+                        </div>
+                        <div>
+                          <label className="label">季節性</label>
+                          <select 
+                            className="input"
+                            value={aiSettings.seasonality}
+                            onChange={(e) => setAiSettings({ ...aiSettings, seasonality: e.target.value })}
+                          >
+                            <option value="high">高</option>
+                            <option value="medium">中</option>
+                            <option value="low">低</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="label">競合動向</label>
+                          <select 
+                            className="input"
+                            value={aiSettings.competitorActivity}
+                            onChange={(e) => setAiSettings({ ...aiSettings, competitorActivity: e.target.value })}
+                          >
+                            <option value="stable">安定</option>
+                            <option value="increasing">増加</option>
+                            <option value="decreasing">減少</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="label">市場トレンド</label>
+                          <select 
+                            className="input"
+                            value={aiSettings.marketTrend}
+                            onChange={(e) => setAiSettings({ ...aiSettings, marketTrend: e.target.value })}
+                          >
+                            <option value="growing">成長</option>
+                            <option value="stable">安定</option>
+                            <option value="declining">減少</option>
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="border-t pt-4">
+                      <h4 className="text-sm font-semibold text-gray-700 mb-3">ビジネスコンテキスト</h4>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="label">生産能力 (個/月)</label>
+                          <input 
+                            type="number" 
+                            className="input" 
+                            value={aiSettings.productionCapacity}
+                            onChange={(e) => setAiSettings({ ...aiSettings, productionCapacity: parseInt(e.target.value) })}
+                            placeholder="2000"
+                          />
+                        </div>
+                        <div>
+                          <label className="label">在庫レベル (個)</label>
+                          <input 
+                            type="number" 
+                            className="input" 
+                            value={aiSettings.inventoryLevel}
+                            onChange={(e) => setAiSettings({ ...aiSettings, inventoryLevel: parseInt(e.target.value) })}
+                            placeholder="500"
+                          />
+                        </div>
+                        <div>
+                          <label className="label">リードタイム (日)</label>
+                          <input 
+                            type="number" 
+                            className="input" 
+                            value={aiSettings.leadTime}
+                            onChange={(e) => setAiSettings({ ...aiSettings, leadTime: parseInt(e.target.value) })}
+                            placeholder="14"
+                          />
+                        </div>
+                        <div>
+                          <label className="label">サプライヤー信頼性 (%)</label>
+                          <input 
+                            type="number" 
+                            className="input" 
+                            value={aiSettings.supplierReliability}
+                            onChange={(e) => setAiSettings({ ...aiSettings, supplierReliability: parseInt(e.target.value) })}
+                            placeholder="95"
+                            min="0"
+                            max="100"
+                          />
+                        </div>
+                      </div>
                     </div>
                   </div>
                   <div className="mt-6 flex justify-end space-x-3">
@@ -484,12 +677,26 @@ const DemandForecasting: React.FC = () => {
                       type="button"
                       onClick={() => setShowAIModal(false)}
                       className="btn-secondary"
+                      disabled={isAILoading}
                     >
                       キャンセル
                     </button>
-                    <button onClick={handleAIExecute} className="btn-primary">
-                      <Brain className="w-4 h-4 mr-2" />
-                      AI予測実行
+                    <button 
+                      onClick={handleAIExecute} 
+                      className="btn-primary"
+                      disabled={isAILoading}
+                    >
+                      {isAILoading ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          AI予測実行中...
+                        </>
+                      ) : (
+                        <>
+                          <Brain className="w-4 h-4 mr-2" />
+                          AI予測実行
+                        </>
+                      )}
                     </button>
                   </div>
                 </div>
