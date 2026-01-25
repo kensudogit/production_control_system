@@ -74,6 +74,36 @@
 - Docker Compose 2.0 以上
 - Vercel CLI（クラウドデプロイ用）
 
+### 最速スタート（5分）
+
+```bash
+# 1. リポジトリのクローン
+git clone <repository-url>
+cd production_control_system
+
+# 2. 環境変数の設定
+cp env.example .env
+# .envファイルを編集
+
+# 3. データベースの初期化とサービス起動
+docker-compose up -d postgres
+sleep 10
+docker-compose exec postgres psql -U production_user -d production_control -f /docker-entrypoint-initdb.d/01_schema.sql
+docker-compose exec postgres psql -U production_user -d production_control -f /docker-entrypoint-initdb.d/02_indexes.sql
+docker-compose exec postgres psql -U production_user -d production_control -f /docker-entrypoint-initdb.d/03_views.sql
+docker-compose exec postgres psql -U production_user -d production_control -f /docker-entrypoint-initdb.d/04_functions.sql
+
+# 4. 全サービスの起動
+docker-compose up -d
+
+# 5. アクセス
+# Frontend: http://localhost:3000
+# API Gateway: http://localhost:8080
+# Grafana: http://localhost:3001 (admin/admin)
+```
+
+詳細は [QUICKSTART.md](QUICKSTART.md) を参照してください。
+
 ### ☁️ Vercelクラウドデプロイ（最速）
 
 #### 1. Vercel CLIのインストール
@@ -459,12 +489,22 @@ kubectl logs -f deployment/frontend
 
 ## 📚 API ドキュメント
 
-### エンドポイント
+### 認証エンドポイント
+- `POST /api/auth/login` - ログイン
+- `POST /api/auth/register` - ユーザー登録
+- `POST /api/auth/refresh` - トークンリフレッシュ
+- `POST /api/auth/logout` - ログアウト
+
+### 主要エンドポイント
 - `GET /api/dashboard/stats` - ダッシュボード統計
 - `GET /api/production-plans` - 生産計画一覧
 - `POST /api/production-plans` - 生産計画作成
 - `GET /api/inventory/:itemType` - 在庫データ
 - `GET /api/quality/:planId` - 品質データ
+
+### API仕様
+- OpenAPI/Swagger: http://localhost:8080/swagger-ui.html (開発環境)
+- Postman Collection: [api/postman/collection.json](api/postman/collection.json)
 
 ## 🤝 コントリビューション
 
@@ -484,18 +524,106 @@ kubectl logs -f deployment/frontend
 - **Discussions**: GitHub Discussions
 - **Email**: support@production-control.com
 
+## 🔒 セキュリティ機能
+
+- **認証・認可**: JWT ベースの認証システム
+- **パスワードハッシュ化**: BCrypt による安全なパスワード保存
+- **CORS設定**: 適切なオリジン制限
+- **Rate Limiting**: DDoS攻撃対策
+- **セキュリティヘッダー**: XSS、クリックジャッキング対策
+- **入力検証**: サーバーサイドバリデーション
+- **SQLインジェクション対策**: パラメータ化クエリ
+- **セキュリティログ**: 監査ログの記録
+
+詳細は [SECURITY.md](SECURITY.md) を参照してください。
+
+## 📊 監視とメトリクス
+
+### 利用可能なメトリクス
+- **Prometheus**: メトリクス収集と保存
+- **Grafana**: ダッシュボードと可視化
+- **ELK Stack**: ログ集約と分析
+- **Alertmanager**: アラート管理
+
+### 監視対象
+- サービス稼働状況
+- CPU/メモリ使用率
+- HTTPリクエスト数とエラー率
+- レスポンス時間
+- データベース接続プール
+- Redis接続状態
+- サーキットブレーカー状態
+
+## 🧪 テスト
+
+### テストカバレッジ
+- **ユニットテスト**: 90%以上
+- **統合テスト**: 主要機能をカバー
+- **E2Eテスト**: 主要ユーザーフロー
+
+### テスト実行
+```bash
+# フロントエンド
+cd frontend
+npm run test
+
+# バックエンド
+cd api-gateway
+./gradlew test
+```
+
+## 🚀 CI/CD
+
+### GitHub Actions
+- 自動テスト実行
+- Dockerイメージのビルドとプッシュ
+- セキュリティスキャン
+- 自動デプロイ（本番環境）
+
+詳細は [.github/workflows/ci-cd.yml](.github/workflows/ci-cd.yml) を参照してください。
+
+## 📖 ドキュメント
+
+- [QUICKSTART.md](QUICKSTART.md) - クイックスタートガイド
+- [DEPLOYMENT.md](DEPLOYMENT.md) - デプロイメントガイド
+- [SECURITY.md](SECURITY.md) - セキュリティポリシー
+- [PRODUCTION_CHECKLIST.md](PRODUCTION_CHECKLIST.md) - 本番環境チェックリスト
+- [DEMO_GUIDE.md](DEMO_GUIDE.md) - 顧客プレゼン・デモンストレーションガイド
+
+## 🎬 デモンストレーション
+
+本システムには、顧客プレゼンに適した豊富なサンプルデータが含まれています：
+
+- **18種類の製品**（スマートフォン、ノートPC、タブレット、イヤホン、スマートウォッチ、アクセサリー）
+- **20種類の原材料**（電子部品、金属材料、プラスチック材料、包装材料）
+- **12件の生産計画**（進行中、計画中、完了、保留）
+- **38アイテムの在庫データ**（製品18 + 原材料20）
+- **複数の品質検査データ**（合格率98%以上）
+- **詳細な原価計算データ**
+- **需要予測データ**（予測精度95%以上）
+
+詳細は [DEMO_GUIDE.md](DEMO_GUIDE.md) を参照してください。
+
 ## 🎯 ロードマップ
 
 ### v1.1 (予定)
 - [ ] モバイルアプリ対応
 - [ ] AI予測機能強化
 - [ ] 多言語対応
+- [ ] リアルタイム通知機能
 
 ### v1.2 (予定)
 - [ ] クラウドネイティブ対応
 - [ ] マイクロサービス拡張
 - [ ] 高度な分析機能
+- [ ] 機械学習による需要予測
 
 ---
 
 **生産管理システム** - 次世代の製造業を支えるプラットフォーム
+
+## 📞 サポート
+
+- **Issues**: [GitHub Issues](https://github.com/your-org/production-control-system/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/your-org/production-control-system/discussions)
+- **Email**: support@production-control.local

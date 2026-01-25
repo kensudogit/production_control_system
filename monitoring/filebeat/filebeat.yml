@@ -1,0 +1,20 @@
+filebeat.inputs:
+  - type: container
+    paths:
+      - '/var/lib/docker/containers/*/*.log'
+    processors:
+      - add_docker_metadata:
+          host: "unix:///var/run/docker.sock"
+
+output.elasticsearch:
+  hosts: ["http://elasticsearch:9200"]
+  index: "production-control-logs-%{+yyyy.MM.dd}"
+
+setup.template.settings:
+  index.number_of_shards: 1
+  index.codec: best_compression
+
+processors:
+  - add_host_metadata:
+      when.not.contains.tags: forwarded
+  - add_docker_metadata: ~

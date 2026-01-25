@@ -1,0 +1,113 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    cluster: 'production-control'
+    environment: 'production'
+
+# Alertmanager設定
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: ['alertmanager:9093']
+
+# アラートルール
+rule_files:
+  - 'alerts.yml'
+
+# スクレイプ設定
+scrape_configs:
+  # Prometheus自身
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # API Gateway
+  - job_name: 'api-gateway'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['api-gateway:8080']
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'api-gateway'
+
+  # Auth Service
+  - job_name: 'auth-service'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['auth-service:8087']
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'auth-service'
+
+  # Production Planning Service
+  - job_name: 'production-planning-service'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['production-planning-service:8081']
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'production-planning-service'
+
+  # Inventory Management Service
+  - job_name: 'inventory-management-service'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['inventory-management-service:8082']
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'inventory-management-service'
+
+  # Process Management Service
+  - job_name: 'process-management-service'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['process-management-service:8083']
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'process-management-service'
+
+  # Quality Management Service
+  - job_name: 'quality-management-service'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['quality-management-service:8084']
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'quality-management-service'
+
+  # Cost Management Service
+  - job_name: 'cost-management-service'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['cost-management-service:8085']
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'cost-management-service'
+
+  # Demand Forecasting Service
+  - job_name: 'demand-forecasting-service'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['demand-forecasting-service:8086']
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'demand-forecasting-service'
+
+  # PostgreSQL
+  - job_name: 'postgres'
+    static_configs:
+      - targets: ['postgres-exporter:9187']
+
+  # Redis
+  - job_name: 'redis'
+    static_configs:
+      - targets: ['redis-exporter:9121']

@@ -1,0 +1,89 @@
+groups:
+  - name: production_control_alerts
+    interval: 30s
+    rules:
+      # サービスダウンアラート
+      - alert: ServiceDown
+        expr: up{job=~".*-service|api-gateway"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "サービスがダウンしています"
+          description: "{{ $labels.job }} が {{ $value }} 分間ダウンしています"
+
+      # 高CPU使用率
+      - alert: HighCPUUsage
+        expr: process_cpu_usage > 0.8
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "CPU使用率が高いです"
+          description: "{{ $labels.instance }} のCPU使用率が {{ $value | humanizePercentage }} です"
+
+      # 高メモリ使用率
+      - alert: HighMemoryUsage
+        expr: jvm_memory_used_bytes / jvm_memory_max_bytes > 0.9
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "メモリ使用率が高いです"
+          description: "{{ $labels.instance }} のメモリ使用率が {{ $value | humanizePercentage }} です"
+
+      # 高いHTTPエラー率
+      - alert: HighHTTPErrorRate
+        expr: |
+          sum(rate(http_server_requests_seconds_count{status=~"5.."}[5m])) 
+          / 
+          sum(rate(http_server_requests_seconds_count[5m])) > 0.05
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "HTTPエラー率が高いです"
+          description: "エラー率が {{ $value | humanizePercentage }} です"
+
+      # 高いレスポンス時間
+      - alert: HighResponseTime
+        expr: |
+          histogram_quantile(0.95, 
+            sum(rate(http_server_requests_seconds_bucket[5m])) by (le, instance)
+          ) > 2
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "レスポンス時間が高いです"
+          description: "{{ $labels.instance }} の95パーセンタイルレスポンス時間が {{ $value }}秒 です"
+
+      # データベース接続プール不足
+      - alert: DatabaseConnectionPoolExhausted
+        expr: hikari_connections_active / hikari_connections_max > 0.9
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "データベース接続プールが不足しています"
+          description: "{{ $labels.instance }} の接続プール使用率が {{ $value | humanizePercentage }} です"
+
+      # Redis接続エラー
+      - alert: RedisConnectionError
+        expr: redis_connected_clients == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Redis接続エラー"
+          description: "Redisへの接続が失われています"
+
+      # サーキットブレーカー開放
+      - alert: CircuitBreakerOpen
+        expr: resilience4j_circuitbreaker_state{state="open"} == 1
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: "サーキットブレーカーが開放されています"
+          description: "{{ $labels.name }} のサーキットブレーカーが開放されています"

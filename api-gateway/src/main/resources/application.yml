@@ -1,0 +1,287 @@
+spring:
+  application:
+    name: api-gateway
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:docker}
+  
+  # データソース設定
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/production_control}
+    username: ${SPRING_DATASOURCE_USERNAME:production_user}
+    password: ${SPRING_DATASOURCE_PASSWORD:production_password}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 5
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+      leak-detection-threshold: 60000
+  
+  # JPA設定
+  jpa:
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    hibernate:
+      ddl-auto: validate
+      naming:
+        physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: false
+        use_sql_comments: false
+        jdbc:
+          batch_size: 20
+        order_inserts: true
+        order_updates: true
+  
+  # Redis設定
+  data:
+    redis:
+      host: ${SPRING_REDIS_HOST:localhost}
+      port: ${SPRING_REDIS_PORT:6379}
+      password: ${SPRING_REDIS_PASSWORD:redis_password}
+      timeout: 2000ms
+      lettuce:
+        pool:
+          max-active: 8
+          max-idle: 8
+          min-idle: 2
+          max-wait: -1ms
+  
+  # キャッシュ設定
+  cache:
+    type: redis
+    redis:
+      time-to-live: 1800000 # 30分
+  
+  # Cloud Gateway設定
+  cloud:
+    gateway:
+      routes:
+        - id: production-planning-service
+          uri: http://production-planning-service:8081
+          predicates:
+            - Path=/api/production-plans/**
+          filters:
+            - StripPrefix=1
+            - name: CircuitBreaker
+              args:
+                name: productionPlanningCircuitBreaker
+                fallbackUri: forward:/fallback/production-plans
+        
+        - id: inventory-management-service
+          uri: http://inventory-management-service:8082
+          predicates:
+            - Path=/api/inventory/**
+          filters:
+            - StripPrefix=1
+            - name: CircuitBreaker
+              args:
+                name: inventoryCircuitBreaker
+                fallbackUri: forward:/fallback/inventory
+        
+        - id: process-management-service
+          uri: http://process-management-service:8083
+          predicates:
+            - Path=/api/processes/**
+          filters:
+            - StripPrefix=1
+            - name: CircuitBreaker
+              args:
+                name: processCircuitBreaker
+                fallbackUri: forward:/fallback/processes
+        
+        - id: quality-management-service
+          uri: http://quality-management-service:8084
+          predicates:
+            - Path=/api/quality/**
+          filters:
+            - StripPrefix=1
+            - name: CircuitBreaker
+              args:
+                name: qualityCircuitBreaker
+                fallbackUri: forward:/fallback/quality
+        
+        - id: cost-management-service
+          uri: http://cost-management-service:8085
+          predicates:
+            - Path=/api/cost/**
+          filters:
+            - StripPrefix=1
+            - name: CircuitBreaker
+              args:
+                name: costCircuitBreaker
+                fallbackUri: forward:/fallback/cost
+        
+        - id: demand-forecasting-service
+          uri: http://demand-forecasting-service:8086
+          predicates:
+            - Path=/api/forecast/**
+          filters:
+            - StripPrefix=1
+            - name: CircuitBreaker
+              args:
+                name: demandCircuitBreaker
+                fallbackUri: forward:/fallback/forecast
+        
+        - id: auth-service
+          uri: http://auth-service:8087
+          predicates:
+            - Path=/api/auth/**
+          filters:
+            - StripPrefix=1
+      
+      globalcors:
+        cors-configurations:
+          '[/**]':
+            allowedOrigins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000,http://localhost:3001}
+            allowedMethods:
+              - GET
+              - POST
+              - PUT
+              - DELETE
+              - PATCH
+              - OPTIONS
+            allowedHeaders:
+              - "*"
+            allowCredentials: true
+            maxAge: 3600
+  
+  # セキュリティ設定
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${JWT_ISSUER_URI:http://auth-service:8087}
+          jwk-set-uri: ${JWT_JWK_SET_URI:http://auth-service:8087/.well-known/jwks.json}
+
+# Resilience4j Circuit Breaker設定
+resilience4j:
+  circuitbreaker:
+    configs:
+      default:
+        slidingWindowSize: 10
+        minimumNumberOfCalls: 5
+        permittedNumberOfCallsInHalfOpenState: 3
+        automaticTransitionFromOpenToHalfOpenEnabled: true
+        waitDurationInOpenState: 10s
+        failureRateThreshold: 50
+        eventConsumerBufferSize: 10
+    instances:
+      productionPlanningCircuitBreaker:
+        baseConfig: default
+      inventoryCircuitBreaker:
+        baseConfig: default
+      processCircuitBreaker:
+        baseConfig: default
+      qualityCircuitBreaker:
+        baseConfig: default
+      costCircuitBreaker:
+        baseConfig: default
+      demandCircuitBreaker:
+        baseConfig: default
+  
+  timelimiter:
+    configs:
+      default:
+        timeoutDuration: 5s
+    instances:
+      productionPlanningCircuitBreaker:
+        baseConfig: default
+
+# Actuator設定
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus,circuitbreakers
+      base-path: /actuator
+  endpoint:
+    health:
+      show-details: when-authorized
+      probes:
+        enabled: true
+  health:
+    circuitbreakers:
+      enabled: true
+    redis:
+      enabled: true
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+    tags:
+      application: ${spring.application.name}
+  tracing:
+    sampling:
+      probability: 1.0
+
+# ロギング設定
+logging:
+  level:
+    root: INFO
+    com.production.control: DEBUG
+    org.springframework.cloud.gateway: DEBUG
+    org.springframework.web: INFO
+    org.hibernate: WARN
+    org.hibernate.SQL: DEBUG
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+  file:
+    name: logs/api-gateway.log
+    max-size: 10MB
+    max-history: 30
+
+# サーバー設定
+server:
+  port: 8080
+  error:
+    include-message: always
+    include-binding-errors: always
+    include-stacktrace: on_param
+    include-exception: false
+  compression:
+    enabled: true
+    mime-types: application/json,application/xml,text/html,text/xml,text/plain
+  http2:
+    enabled: true
+
+---
+# Docker環境用設定
+spring:
+  config:
+    activate:
+      on-profile: docker
+  datasource:
+    url: jdbc:postgresql://postgres:5432/production_control
+    username: ${SPRING_DATASOURCE_USERNAME:production_user}
+    password: ${SPRING_DATASOURCE_PASSWORD:production_password}
+  data:
+    redis:
+      host: ${SPRING_REDIS_HOST:redis}
+      port: ${SPRING_REDIS_PORT:6379}
+
+---
+# 本番環境用設定
+spring:
+  config:
+    activate:
+      on-profile: prod
+  jpa:
+    hibernate:
+      ddl-auto: validate
+  logging:
+    level:
+      root: WARN
+      com.production.control: INFO
+  datasource:
+    hikari:
+      maximum-pool-size: 50
+      minimum-idle: 10
+
+server:
+  error:
+    include-stacktrace: never
+    include-exception: false
