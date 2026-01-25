@@ -1,5 +1,6 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { useQuery } from 'react-query'
 import { 
   TrendingUp, 
   TrendingDown, 
@@ -16,6 +17,7 @@ import {
   Loader2
 } from 'lucide-react'
 import { getAdvancedOpenAIService, AIForecastRequest } from '../services/openai'
+import { dashboardApi, DemandForecast } from '../services/api'
 
 const DemandForecasting: React.FC = () => {
   const [showAIModal, setShowAIModal] = useState(false)
@@ -37,52 +39,94 @@ const DemandForecasting: React.FC = () => {
     supplierReliability: 95
   })
 
-  const forecastData = [
-    { 
-      id: 'FC-001', 
-      product: '製品A', 
-      currentDemand: 1200, 
-      forecastedDemand: 1350, 
-      trend: 'up', 
-      confidence: 85,
-      seasonality: 'high',
-      lastMonth: 1100,
-      nextMonth: 1400
-    },
-    { 
-      id: 'FC-002', 
-      product: '製品B', 
-      currentDemand: 800, 
-      forecastedDemand: 750, 
-      trend: 'down', 
-      confidence: 78,
-      seasonality: 'medium',
-      lastMonth: 850,
-      nextMonth: 720
-    },
-    { 
-      id: 'FC-003', 
-      product: '製品C', 
-      currentDemand: 950, 
-      forecastedDemand: 980, 
-      trend: 'stable', 
-      confidence: 92,
-      seasonality: 'low',
-      lastMonth: 940,
-      nextMonth: 990
-    },
-    { 
-      id: 'FC-004', 
-      product: '製品D', 
-      currentDemand: 600, 
-      forecastedDemand: 720, 
-      trend: 'up', 
-      confidence: 88,
-      seasonality: 'high',
-      lastMonth: 580,
-      nextMonth: 750
+  // DBから需要予測データを取得
+  const { data: forecastResponse, isLoading: isLoadingForecasts, error: forecastError } = useQuery(
+    'demandForecasts',
+    () => dashboardApi.getDemandForecasts({ period: 'monthly', limit: 50 }),
+    {
+      refetchOnWindowFocus: false,
+      staleTime: 5 * 60 * 1000, // 5分間キャッシュ
     }
-  ]
+  )
+
+  // DBデータをフロントエンド用の形式に変換
+  const [forecastData, setForecastData] = useState<Array<{
+    id: string
+    product: string
+    productCode: string
+    currentDemand: number
+    forecastedDemand: number
+    trend: 'up' | 'down' | 'stable'
+    confidence: number
+    accuracy: number | null
+    seasonality: 'high' | 'medium' | 'low'
+    lastMonth: number
+    nextMonth: number
+    forecastDate: string
+    forecastMethod: string
+  }>>([])
+
+  // DBデータを処理して表示用データに変換
+  useEffect(() => {
+    if (forecastResponse?.data) {
+      // 製品ごとにグループ化して最新の予測を取得
+      const productMap = new Map<string, DemandForecast[]>()
+      
+      forecastResponse.data.forEach((forecast: DemandForecast) => {
+        const key = forecast.productId
+        if (!productMap.has(key)) {
+          productMap.set(key, [])
+        }
+        productMap.get(key)!.push(forecast)
+      })
+
+      // 各製品の最新予測と前月・来月の予測を計算
+      const processedData = Array.from(productMap.entries()).map(([productId, forecasts]) => {
+        // 日付順にソート
+        forecasts.sort((a, b) => new Date(b.forecastDate).getTime() - new Date(a.forecastDate).getTime())
+        
+        const latest = forecasts[0]
+        const previous = forecasts.find(f => 
+          new Date(f.forecastDate).getTime() < new Date(latest.forecastDate).getTime()
+        )
+        const next = forecasts.find(f => 
+          new Date(f.forecastDate).getTime() > new Date(latest.forecastDate).getTime()
+        )
+
+        // トレンドを計算
+        let trend: 'up' | 'down' | 'stable' = 'stable'
+        if (previous) {
+          const change = latest.forecastedQuantity - previous.forecastedQuantity
+          const changePercent = (change / previous.forecastedQuantity) * 100
+          if (changePercent > 5) trend = 'up'
+          else if (changePercent < -5) trend = 'down'
+        }
+
+        // 季節性を信頼度から推定
+        const seasonality: 'high' | 'medium' | 'low' = 
+          latest.confidenceLevel >= 88 ? 'high' : 
+          latest.confidenceLevel >= 80 ? 'medium' : 'low'
+
+        return {
+          id: latest.id,
+          product: latest.productName,
+          productCode: latest.productCode,
+          currentDemand: previous?.forecastedQuantity || latest.forecastedQuantity,
+          forecastedDemand: latest.forecastedQuantity,
+          trend,
+          confidence: Math.round(latest.confidenceLevel),
+          accuracy: latest.accuracy ? Math.round(latest.accuracy) : null,
+          seasonality,
+          lastMonth: previous?.forecastedQuantity || latest.forecastedQuantity,
+          nextMonth: next?.forecastedQuantity || latest.forecastedQuantity,
+          forecastDate: latest.forecastDate,
+          forecastMethod: latest.forecastMethod
+        }
+      })
+
+      setForecastData(processedData)
+    }
+  }, [forecastResponse])
 
   const getTrendColor = (trend: string) => {
     switch (trend) {
@@ -209,9 +253,21 @@ const DemandForecasting: React.FC = () => {
     setShowTrendModal(false)
   }
 
-  const totalCurrentDemand = forecastData.reduce((sum, item) => sum + item.currentDemand, 0)
-  const totalForecastedDemand = forecastData.reduce((sum, item) => sum + item.forecastedDemand, 0)
-  const averageConfidence = forecastData.reduce((sum, item) => sum + item.confidence, 0) / forecastData.length
+  const totalCurrentDemand = forecastData.length > 0 
+    ? forecastData.reduce((sum, item) => sum + item.currentDemand, 0)
+    : 0
+  const totalForecastedDemand = forecastData.length > 0
+    ? forecastData.reduce((sum, item) => sum + item.forecastedDemand, 0)
+    : 0
+  const averageConfidence = forecastData.length > 0
+    ? forecastData.reduce((sum, item) => sum + item.confidence, 0) / forecastData.length
+    : 0
+  const averageAccuracy = forecastData.length > 0
+    ? forecastData
+        .filter(item => item.accuracy !== null)
+        .reduce((sum, item) => sum + (item.accuracy || 0), 0) / 
+        forecastData.filter(item => item.accuracy !== null).length
+    : null
 
   return (
     <div className="min-h-screen gradient-bg-light">
@@ -318,6 +374,27 @@ const DemandForecasting: React.FC = () => {
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.35 }}
+            className="card-gradient-info"
+          >
+            <div className="card-body">
+              <div className="flex items-center">
+                <div className="p-3 bg-white/20 rounded-lg">
+                  <PieChart className="w-6 h-6 text-white" />
+                </div>
+                <div className="ml-4">
+                  <p className="text-sm font-medium text-white/80">平均予測精度</p>
+                  <p className="text-2xl font-bold text-white">
+                    {averageAccuracy !== null ? `${averageAccuracy.toFixed(1)}%` : '未測定'}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.4 }}
             className="card-gradient-warning"
           >
@@ -329,7 +406,9 @@ const DemandForecasting: React.FC = () => {
                 <div className="ml-4">
                   <p className="text-sm font-medium text-white/80">成長率</p>
                   <p className="text-2xl font-bold text-white">
-                    +{((totalForecastedDemand - totalCurrentDemand) / totalCurrentDemand * 100).toFixed(1)}%
+                    {totalCurrentDemand > 0 
+                      ? `${((totalForecastedDemand - totalCurrentDemand) / totalCurrentDemand * 100) >= 0 ? '+' : ''}${((totalForecastedDemand - totalCurrentDemand) / totalCurrentDemand * 100).toFixed(1)}%`
+                      : '0%'}
                   </p>
                 </div>
               </div>
@@ -347,73 +426,135 @@ const DemandForecasting: React.FC = () => {
               <table className="table">
                 <thead>
                   <tr>
-                    <th>製品</th>
+                    <th>製品コード</th>
+                    <th>製品名</th>
                     <th>現在需要</th>
                     <th>予測需要</th>
                     <th>前月</th>
                     <th>来月予測</th>
                     <th>トレンド</th>
                     <th>信頼度</th>
+                    <th>予測精度</th>
+                    <th>予測手法</th>
                     <th>季節性</th>
                     <th>成長率</th>
                     <th>アクション</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {forecastData.map((forecast, index) => {
-                    const growthRate = ((forecast.forecastedDemand - forecast.currentDemand) / forecast.currentDemand * 100)
-                    return (
-                      <motion.tr
-                        key={forecast.id}
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: index * 0.1 }}
-                      >
-                        <td className="font-medium">{forecast.product}</td>
-                        <td className="font-semibold">{forecast.currentDemand.toLocaleString()}</td>
-                        <td className="font-semibold">{forecast.forecastedDemand.toLocaleString()}</td>
-                        <td className="text-sm">{forecast.lastMonth.toLocaleString()}</td>
-                        <td className="text-sm">{forecast.nextMonth.toLocaleString()}</td>
-                        <td>
-                          <span className={`badge ${getTrendColor(forecast.trend)} flex items-center`}>
-                            {getTrendIcon(forecast.trend)}
-                            <span className="ml-1">{getTrendText(forecast.trend)}</span>
-                          </span>
-                        </td>
-                        <td>
-                          <div className="flex items-center">
-                            <div className="w-16 bg-gray-200 rounded-full h-2 mr-2">
-                              <div 
-                                className="bg-primary-600 h-2 rounded-full transition-all duration-300"
-                                style={{ width: `${forecast.confidence}%` }}
-                              />
+                  {isLoadingForecasts ? (
+                    <tr>
+                      <td colSpan={13} className="text-center py-8">
+                        <Loader2 className="w-8 h-8 animate-spin mx-auto text-primary-600" />
+                        <p className="mt-2 text-gray-600">需要予測データを読み込み中...</p>
+                      </td>
+                    </tr>
+                  ) : forecastError ? (
+                    <tr>
+                      <td colSpan={13} className="text-center py-8">
+                        <AlertTriangle className="w-8 h-8 mx-auto text-danger-600" />
+                        <p className="mt-2 text-danger-600">データの読み込みに失敗しました</p>
+                        <p className="text-sm text-gray-500 mt-1">{forecastError instanceof Error ? forecastError.message : '不明なエラー'}</p>
+                      </td>
+                    </tr>
+                  ) : forecastData.length === 0 ? (
+                    <tr>
+                      <td colSpan={13} className="text-center py-8">
+                        <p className="text-gray-600">需要予測データがありません</p>
+                      </td>
+                    </tr>
+                  ) : (
+                    forecastData.map((forecast, index) => {
+                      const growthRate = ((forecast.forecastedDemand - forecast.currentDemand) / forecast.currentDemand * 100)
+                      return (
+                        <motion.tr
+                          key={forecast.id}
+                          initial={{ opacity: 0, x: -20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: index * 0.1 }}
+                        >
+                          <td className="font-mono text-sm">{forecast.productCode}</td>
+                          <td className="font-medium">{forecast.product}</td>
+                          <td className="font-semibold">{forecast.currentDemand.toLocaleString()}</td>
+                          <td className="font-semibold">{forecast.forecastedDemand.toLocaleString()}</td>
+                          <td className="text-sm">{forecast.lastMonth.toLocaleString()}</td>
+                          <td className="text-sm">{forecast.nextMonth.toLocaleString()}</td>
+                          <td>
+                            <span className={`badge ${getTrendColor(forecast.trend)} flex items-center`}>
+                              {getTrendIcon(forecast.trend)}
+                              <span className="ml-1">{getTrendText(forecast.trend)}</span>
+                            </span>
+                          </td>
+                          <td>
+                            <div className="flex items-center">
+                              <div className="w-16 bg-gray-200 rounded-full h-2 mr-2">
+                                <div 
+                                  className="bg-primary-600 h-2 rounded-full transition-all duration-300"
+                                  style={{ width: `${forecast.confidence}%` }}
+                                />
+                              </div>
+                              <span className="text-sm font-medium">{forecast.confidence}%</span>
                             </div>
-                            <span className="text-sm font-medium">{forecast.confidence}%</span>
-                          </div>
-                        </td>
-                        <td>
-                          <span className={`badge ${getSeasonalityColor(forecast.seasonality)}`}>
-                            {getSeasonalityText(forecast.seasonality)}
-                          </span>
-                        </td>
-                        <td className={`font-semibold ${growthRate >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                          {growthRate >= 0 ? '+' : ''}{growthRate.toFixed(1)}%
-                        </td>
-                        <td>
-                          <div className="flex space-x-2">
-                            <button className="btn-sm btn-secondary">
-                              <LineChart className="w-3 h-3 mr-1" />
-                              詳細
-                            </button>
-                            <button className="btn-sm btn-primary">
-                              <Brain className="w-3 h-3 mr-1" />
-                              再予測
-                            </button>
-                          </div>
-                        </td>
-                      </motion.tr>
-                    )
-                  })}
+                          </td>
+                          <td>
+                            {forecast.accuracy !== null ? (
+                              <div className="flex items-center">
+                                <div className="w-16 bg-gray-200 rounded-full h-2 mr-2">
+                                  <div 
+                                    className={`h-2 rounded-full transition-all duration-300 ${
+                                      forecast.accuracy >= 95 ? 'bg-success-600' :
+                                      forecast.accuracy >= 90 ? 'bg-primary-600' :
+                                      forecast.accuracy >= 85 ? 'bg-warning-600' :
+                                      'bg-danger-600'
+                                    }`}
+                                    style={{ width: `${forecast.accuracy}%` }}
+                                  />
+                                </div>
+                                <span className={`text-sm font-medium ${
+                                  forecast.accuracy >= 95 ? 'text-success-600' :
+                                  forecast.accuracy >= 90 ? 'text-primary-600' :
+                                  forecast.accuracy >= 85 ? 'text-warning-600' :
+                                  'text-danger-600'
+                                }`}>
+                                  {forecast.accuracy}%
+                                </span>
+                              </div>
+                            ) : (
+                              <span className="text-sm text-gray-400">未測定</span>
+                            )}
+                          </td>
+                          <td>
+                            <span className="text-xs bg-gray-100 px-2 py-1 rounded">
+                              {forecast.forecastMethod === 'ml_model' ? 'ML' :
+                               forecast.forecastMethod === 'moving_average' ? '移動平均' :
+                               forecast.forecastMethod === 'exponential_smoothing' ? '指数平滑' :
+                               forecast.forecastMethod}
+                            </span>
+                          </td>
+                          <td>
+                            <span className={`badge ${getSeasonalityColor(forecast.seasonality)}`}>
+                              {getSeasonalityText(forecast.seasonality)}
+                            </span>
+                          </td>
+                          <td className={`font-semibold ${growthRate >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                            {growthRate >= 0 ? '+' : ''}{growthRate.toFixed(1)}%
+                          </td>
+                          <td>
+                            <div className="flex space-x-2">
+                              <button className="btn-sm btn-secondary">
+                                <LineChart className="w-3 h-3 mr-1" />
+                                詳細
+                              </button>
+                              <button className="btn-sm btn-primary">
+                                <Brain className="w-3 h-3 mr-1" />
+                                再予測
+                              </button>
+                            </div>
+                          </td>
+                        </motion.tr>
+                      )
+                    })
+                  )}
                 </tbody>
               </table>
             </div>
@@ -441,12 +582,64 @@ const DemandForecasting: React.FC = () => {
               <h3 className="text-lg font-semibold text-gray-800">予測精度</h3>
             </div>
             <div className="card-body">
-              <div className="h-64 flex items-center justify-center bg-gradient-to-r from-green-50 to-blue-50 rounded-lg">
-                <div className="text-center">
-                  <PieChart className="w-12 h-12 text-success-600 mx-auto mb-4" />
-                  <p className="text-gray-600">予測精度分析</p>
+              {forecastData.filter(f => f.accuracy !== null).length > 0 ? (
+                <div className="space-y-4">
+                  {forecastData
+                    .filter(f => f.accuracy !== null)
+                    .slice(0, 5)
+                    .map((forecast) => (
+                      <div key={forecast.id} className="flex items-center justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="text-sm font-medium text-gray-700">{forecast.product}</span>
+                            <span className={`text-sm font-semibold ${
+                              forecast.accuracy! >= 95 ? 'text-success-600' :
+                              forecast.accuracy! >= 90 ? 'text-primary-600' :
+                              forecast.accuracy! >= 85 ? 'text-warning-600' :
+                              'text-danger-600'
+                            }`}>
+                              {forecast.accuracy}%
+                            </span>
+                          </div>
+                          <div className="w-full bg-gray-200 rounded-full h-2">
+                            <div 
+                              className={`h-2 rounded-full transition-all duration-300 ${
+                                forecast.accuracy! >= 95 ? 'bg-success-600' :
+                                forecast.accuracy! >= 90 ? 'bg-primary-600' :
+                                forecast.accuracy! >= 85 ? 'bg-warning-600' :
+                                'bg-danger-600'
+                              }`}
+                              style={{ width: `${forecast.accuracy}%` }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  {averageAccuracy !== null && (
+                    <div className="mt-4 pt-4 border-t border-gray-200">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium text-gray-700">平均予測精度</span>
+                        <span className={`text-lg font-bold ${
+                          averageAccuracy >= 95 ? 'text-success-600' :
+                          averageAccuracy >= 90 ? 'text-primary-600' :
+                          averageAccuracy >= 85 ? 'text-warning-600' :
+                          'text-danger-600'
+                        }`}>
+                          {averageAccuracy.toFixed(1)}%
+                        </span>
+                      </div>
+                    </div>
+                  )}
                 </div>
-              </div>
+              ) : (
+                <div className="h-64 flex items-center justify-center bg-gradient-to-r from-green-50 to-blue-50 rounded-lg">
+                  <div className="text-center">
+                    <PieChart className="w-12 h-12 text-success-600 mx-auto mb-4" />
+                    <p className="text-gray-600">予測精度データがありません</p>
+                    <p className="text-sm text-gray-500 mt-1">実績データが蓄積されると表示されます</p>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>

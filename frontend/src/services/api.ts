@@ -87,6 +87,27 @@ export interface PaginatedResponse<T> {
   limit: number
 }
 
+export interface DemandForecast {
+  id: string
+  productId: string
+  productCode: string
+  productName: string
+  productCategory: string
+  forecastDate: string
+  forecastPeriod: 'daily' | 'weekly' | 'monthly' | 'quarterly' | 'yearly'
+  forecastedQuantity: number
+  confidenceLevel: number
+  forecastMethod: string
+  actualQuantity: number | null
+  accuracy: number | null
+  createdAt: string
+  updatedAt: string
+  createdBy: {
+    username: string
+    name: string
+  }
+}
+
 // API サービスクラス
 class ApiService {
   // ダッシュボード関連
@@ -216,6 +237,31 @@ class ApiService {
   }
 
   // 需要予測関連
+  async getDemandForecasts(params?: {
+    productId?: string
+    period?: string
+    startDate?: string
+    endDate?: string
+    limit?: number
+  }): Promise<{
+    data: DemandForecast[]
+    stats: {
+      totalForecasts: number
+      averageConfidence: number
+      averageAccuracy: number | null
+      totalForecastedQuantity: number
+      totalActualQuantity: number | null
+      productsCount: number
+      periodsCount: number
+    }
+    total: number
+  }> {
+    const response = await apiClient.get('/demand-forecasts', {
+      params
+    })
+    return response.data
+  }
+
   async getDemandForecast(productId: string, period: string): Promise<any> {
     const response = await apiClient.get('/forecast', {
       params: { productId, period }
@@ -321,6 +367,13 @@ export const apiFunctions = {
   getCostAnalysis: (period: string) => dashboardApi.getCostAnalysis(period),
   
   // 需要予測
+  getDemandForecasts: (params?: {
+    productId?: string
+    period?: string
+    startDate?: string
+    endDate?: string
+    limit?: number
+  }) => dashboardApi.getDemandForecasts(params),
   getDemandForecast: (productId: string, period: string) => 
     dashboardApi.getDemandForecast(productId, period),
   
