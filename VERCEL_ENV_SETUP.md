@@ -21,7 +21,7 @@
    - 「Add New」ボタンをクリック
    - 以下の情報を入力：
      - **Key**: `VITE_OPENAI_API_KEY`
-     - **Value**: `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`
+     - **Value**: `your-openai-api-key-here`（実際のAPIキーを入力）
      - **Environment**: `Production`（本番環境）にチェック
      - 必要に応じて `Preview` と `Development` にもチェック
 
@@ -54,7 +54,7 @@ vercel env add VITE_OPENAI_API_KEY development
 ```powershell
 # 環境変数を設定
 vercel env add VITE_OPENAI_API_KEY production
-# 値を入力: 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
+# 値を入力: your-openai-api-key-here（実際のAPIキーを入力）
 
 # 他の環境変数も設定
 vercel env add NODE_ENV production
@@ -111,7 +111,7 @@ Vercel Dashboardで設定する場合：
 1. Settings → Environment Variables
 2. Add New
 3. Key: `VITE_OPENAI_API_KEY`
-4. Value: `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`
+4. Value: `your-openai-api-key-here`（実際のAPIキーを入力）
 5. Environment: Production にチェック
 6. Save
 7. 再デプロイ
