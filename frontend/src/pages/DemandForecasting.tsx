@@ -132,14 +132,16 @@ const DemandForecasting: React.FC = () => {
   const handleAIExecute = async () => {
     setIsAILoading(true)
     try {
-      // 環境変数からAPIキーを取得
-      const apiKey = import.meta.env.VITE_OPENAI_API_KEY || ''
-      if (!apiKey) {
-        alert('OpenAI APIキーが設定されていません。環境変数 VITE_OPENAI_API_KEY を設定してください。')
+      // 環境変数からAPIキーを取得（getAdvancedOpenAIServiceが自動的に環境変数から取得）
+      let openAIService
+      try {
+        openAIService = getAdvancedOpenAIService()
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : '不明なエラーが発生しました'
+        alert(`OpenAI APIキーの設定エラー:\n${errorMessage}\n\nVercel Dashboardで環境変数 VITE_OPENAI_API_KEY を設定してください。`)
         setIsAILoading(false)
         return
       }
-      const openAIService = getAdvancedOpenAIService(apiKey)
       
       const request: AIForecastRequest = {
         product: aiSettings.product,

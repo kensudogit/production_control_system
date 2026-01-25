@@ -351,17 +351,35 @@ ${historicalData.map(d =>
   }
 }
 
-// シングルトンインスタンス
+// 環境変数からAPIキーを取得するヘルパー関数
+// 注意: この関数は後方互換性のため保持されていますが、
+// 新しいコードでは utils/env.ts の getOpenAIApiKey を使用してください
+export const getOpenAIApiKey = (): string => {
+  const apiKey = import.meta.env.VITE_OPENAI_API_KEY || ''
+  if (!apiKey) {
+    console.warn('VITE_OPENAI_API_KEY環境変数が設定されていません')
+  }
+  return apiKey
+}
+
+// シングルトンインスタンス（APIキーと一緒に保存）
 let advancedOpenAIService: AdvancedOpenAIService | null = null
+let currentApiKey: string | null = null
 
 export const getAdvancedOpenAIService = (apiKey?: string): AdvancedOpenAIService => {
-  if (!advancedOpenAIService) {
-    const key = apiKey || ''
-    if (!key) {
-      throw new Error('OpenAI APIキーが設定されていません')
-    }
-    advancedOpenAIService = new AdvancedOpenAIService(key)
+  // APIキーが引数で渡されていない場合は環境変数から取得
+  const key = apiKey || getOpenAIApiKey()
+  
+  if (!key) {
+    throw new Error('OpenAI APIキーが設定されていません。環境変数 VITE_OPENAI_API_KEY を設定してください。')
   }
+  
+  // 既存のインスタンスが存在し、APIキーが変更された場合は再作成
+  if (!advancedOpenAIService || currentApiKey !== key) {
+    advancedOpenAIService = new AdvancedOpenAIService(key)
+    currentApiKey = key
+  }
+  
   return advancedOpenAIService
 }
 
