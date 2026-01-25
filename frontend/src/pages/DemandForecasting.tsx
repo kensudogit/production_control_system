@@ -132,7 +132,14 @@ const DemandForecasting: React.FC = () => {
   const handleAIExecute = async () => {
     setIsAILoading(true)
     try {
-      const openAIService = getAdvancedOpenAIService('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')
+      // 環境変数からAPIキーを取得
+      const apiKey = import.meta.env.VITE_OPENAI_API_KEY || ''
+      if (!apiKey) {
+        alert('OpenAI APIキーが設定されていません。環境変数 VITE_OPENAI_API_KEY を設定してください。')
+        setIsAILoading(false)
+        return
+      }
+      const openAIService = getAdvancedOpenAIService(apiKey)
       
       const request: AIForecastRequest = {
         product: aiSettings.product,

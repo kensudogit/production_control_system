@@ -104,36 +104,56 @@ docker-compose up -d
 
 詳細は [QUICKSTART.md](QUICKSTART.md) を参照してください。
 
-### ☁️ Vercelクラウドデプロイ（最速）
+### ☁️ Vercelクラウドデプロイ（最速・完全公開モード）
 
-#### 1. Vercel CLIのインストール
-```bash
+#### 方法1: PowerShellスクリプトを使用（推奨）
+
+```powershell
+# 1. Vercel CLIをインストール（初回のみ）
 npm install -g vercel
-```
 
-#### 2. Vercelにログイン
-```bash
+# 2. Vercelにログイン（初回のみ）
 vercel login
+
+# 3. 本番環境にデプロイ
+cd C:\devlop\production_control_system
+.\deploy-vercel-production.ps1
 ```
 
-#### 3. プロジェクトのデプロイ
+#### 方法2: Vercel CLIで直接デプロイ
+
 ```bash
-# プレビューデプロイ
-./vercel-deploy.sh preview
+# 1. Vercelにログイン
+vercel login
 
-# 本番デプロイ
-./vercel-deploy.sh production
+# 2. プロジェクトを初期化（初回のみ）
+vercel
+
+# 3. 本番環境にデプロイ
+vercel --prod
 ```
 
-#### 4. カスタムドメインの設定
-```bash
-./vercel-deploy.sh domain your-domain.com
-```
+#### 方法3: GitHub Actionsで自動デプロイ
+
+`main`ブランチにプッシュすると自動的にデプロイされます。
+
+#### 4. 環境変数の設定
+
+Vercel Dashboardで設定：
+1. https://vercel.com/dashboard にアクセス
+2. プロジェクトを選択
+3. Settings → Environment Variables
+4. 必要な環境変数を追加
 
 #### 5. アクセス
-- **本番URL**: https://production-control-system.vercel.app
+
+デプロイが完了すると、以下のURLでアクセスできます：
+- **本番URL**: https://production-control-system-[hash].vercel.app
 - **Vercel Dashboard**: https://vercel.com/dashboard
 - **Analytics**: https://vercel.com/analytics
+- **Speed Insights**: https://vercel.com/speed-insights
+
+詳細は [VERCEL_DEPLOYMENT.md](VERCEL_DEPLOYMENT.md) を参照してください。
 
 ### ☁️ Vercel詳細設定
 
