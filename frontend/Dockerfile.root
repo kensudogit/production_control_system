@@ -1,18 +1,18 @@
 # Multi-stage build for Frontend
-# This Dockerfile assumes build context is the frontend directory (for Railway)
+# This Dockerfile assumes build context is the root directory (for docker-compose)
 FROM node:18-alpine AS builder
 
 # Set working directory
 WORKDIR /app
 
 # Copy package files
-COPY package*.json ./
+COPY frontend/package*.json ./
 
 # Install dependencies (use all dependencies for build)
 RUN npm ci
 
 # Copy source code
-COPY . ./
+COPY frontend/ ./
 
 # Build application
 RUN npm run build
@@ -27,7 +27,7 @@ RUN apk add --no-cache curl
 COPY --from=builder /app/dist /usr/share/nginx/html
 
 # Copy nginx configuration
-COPY nginx.conf /etc/nginx/nginx.conf
+COPY frontend/nginx.conf /etc/nginx/nginx.conf
 
 # Create nginx user
 RUN addgroup -g 1001 -S nginx && \
