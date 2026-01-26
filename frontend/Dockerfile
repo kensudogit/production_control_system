@@ -12,13 +12,13 @@ COPY package*.json ./
 RUN npm ci
 
 # Ensure execute permissions for binaries immediately after npm ci
-RUN find node_modules/.bin -type f -exec chmod +x {} \; 2>/dev/null || true
+RUN chmod -R +x node_modules/.bin/ 2>/dev/null || true
 
 # Copy source code
 COPY . ./
 
-# Build application (use npx to avoid permission issues with vite binary)
-RUN npx vite build
+# Build application (use node directly to avoid permission issues)
+RUN node node_modules/vite/bin/vite.js build
 
 # Production stage
 FROM nginx:alpine
