@@ -40,10 +40,11 @@ Railwayは各サービスを個別にデプロイする必要があります。
 1. **「New Service」をクリック**
 2. **「GitHub Repo」を選択**
 3. **リポジトリ**: `kensudogit/production_control_system`
-4. **Root Directory**: `/frontend` を設定
-5. **Build Command**: `npm install && npm run build`
-6. **Start Command**: `npm run preview` または Nginxを使用する場合はDockerfileを使用
-7. **Dockerfile Path**: `frontend/Dockerfile` を設定
+4. **Root Directory**: `/frontend` を設定（重要！）
+5. **Dockerfile Path**: `Dockerfile` を設定（`frontend/Dockerfile`ではない）
+6. **または、Root Directoryを設定せず、Dockerfile Path**: `frontend/Dockerfile` を設定
+
+**重要**: Root Directoryを`/frontend`に設定する場合、Dockerfile Pathは`Dockerfile`（`frontend/Dockerfile`ではない）を指定してください。ビルドコンテキストが`frontend`ディレクトリになるためです。
 
 ##### 3-2. API Gatewayのデプロイ
 

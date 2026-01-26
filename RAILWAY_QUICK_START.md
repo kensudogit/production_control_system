@@ -20,9 +20,11 @@
 1. 「New Service」をクリック
 2. 「GitHub Repo」を選択
 3. リポジトリ: `kensudogit/production_control_system`
-4. **Root Directory**: `/frontend` を設定
-5. **Dockerfile Path**: `frontend/Dockerfile` を設定
+4. **Root Directory**: `/frontend` を設定（重要！）
+5. **Dockerfile Path**: `Dockerfile` を設定（`frontend/Dockerfile`ではない）
 6. 「Deploy」をクリック
+
+**重要**: Root Directoryを`/frontend`に設定する場合、Dockerfile Pathは`Dockerfile`を指定してください。ビルドコンテキストが`frontend`ディレクトリになるためです。
 
 ### ステップ4: 環境変数の設定
 

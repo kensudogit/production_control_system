@@ -96,7 +96,7 @@ const DemandForecasting: React.FC = () => {
       })
 
       // 各製品の最新予測と前月・来月の予測を計算
-      const processedData = Array.from(productMap.entries()).map(([productId, forecasts]) => {
+      const processedData = Array.from(productMap.entries()).map(([_productId, forecasts]) => {
         // 日付順にソート
         forecasts.sort((a, b) => new Date(b.forecastDate).getTime() - new Date(a.forecastDate).getTime())
         
