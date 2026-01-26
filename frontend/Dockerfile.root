@@ -32,7 +32,12 @@ COPY --from=builder /app/dist /usr/share/nginx/html
 # Copy nginx configuration
 COPY frontend/nginx.conf /etc/nginx/nginx.conf
 
-# Test nginx configuration before switching to nginx user
+# Copy entrypoint script
+COPY frontend/docker-entrypoint.sh /docker-entrypoint.sh
+RUN chmod +x /docker-entrypoint.sh
+
+# Test nginx configuration before switching to nginx user (with default value)
+# The default value http://api-gateway:8080/ is already in nginx.conf
 RUN nginx -t || (cat /etc/nginx/nginx.conf && exit 1)
 
 # Set proper permissions (nginx user already exists in nginx:alpine image)
@@ -53,5 +58,5 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
 # Expose port
 EXPOSE 80
 
-# Start nginx
-CMD ["nginx", "-g", "daemon off;"]
+# Start nginx using entrypoint script
+ENTRYPOINT ["/docker-entrypoint.sh"]
