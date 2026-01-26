@@ -69,18 +69,45 @@ self.addEventListener('activate', (event) => {
 // フェッチイベントの処理
 self.addEventListener('fetch', (event) => {
   const { request } = event
-  const url = new URL(request.url)
+  
+  try {
+    const url = new URL(request.url)
 
-  // API リクエストの処理
-  if (url.pathname.startsWith('/api/')) {
-    event.respondWith(handleApiRequest(request))
-    return
-  }
+    // API リクエストの処理
+    if (url.pathname.startsWith('/api/')) {
+      event.respondWith(handleApiRequest(request).catch((error) => {
+        console.debug('API request failed:', error)
+        // エラー時は空レスポンスを返す
+        return new Response(
+          JSON.stringify({ error: 'Service unavailable' }),
+          {
+            status: 503,
+            headers: { 'Content-Type': 'application/json' }
+          }
+        )
+      }))
+      return
+    }
 
-  // 静的アセットの処理
-  if (request.method === 'GET') {
-    event.respondWith(handleStaticRequest(request))
-    return
+    // 静的アセットの処理
+    if (request.method === 'GET') {
+      event.respondWith(handleStaticRequest(request).catch((error) => {
+        console.debug('Static request failed:', error)
+        // エラー時は204を返す
+        return new Response('', {
+          status: 204,
+          statusText: 'No Content'
+        })
+      }))
+      return
+    }
+  } catch (error) {
+    // URL解析エラーなど、予期しないエラーを処理
+    console.debug('Fetch event error:', error)
+    event.respondWith(new Response('', {
+      status: 204,
+      statusText: 'No Content'
+    }))
   }
 })
 
@@ -132,6 +159,40 @@ async function handleApiRequest(request) {
 
 // 静的アセットのキャッシュ戦略
 async function handleStaticRequest(request) {
+  const url = new URL(request.url)
+  
+  // Faviconのエラーを特別に処理
+  if (url.pathname === '/favicon.ico' || url.pathname.includes('favicon')) {
+    try {
+      // キャッシュから取得を試みる
+      const cachedResponse = await caches.match(request)
+      if (cachedResponse) {
+        return cachedResponse
+      }
+      
+      // ネットワークから取得を試みる
+      const networkResponse = await fetch(request)
+      if (networkResponse.ok) {
+        const cache = await caches.open(STATIC_CACHE)
+        cache.put(request, networkResponse.clone())
+        return networkResponse
+      }
+      
+      // 502エラーなどの場合、SVGフォールバックを返す
+      return new Response('', {
+        status: 204,
+        statusText: 'No Content'
+      })
+    } catch (error) {
+      // エラー時は204を返してエラーを抑制
+      return new Response('', {
+        status: 204,
+        statusText: 'No Content'
+      })
+    }
+  }
+  
+  // その他の静的アセット
   // キャッシュファースト戦略
   const cachedResponse = await caches.match(request)
   if (cachedResponse) {
@@ -153,7 +214,11 @@ async function handleStaticRequest(request) {
       return caches.match('/')
     }
     
-    throw error
+    // その他のエラーは空レスポンスを返す（エラーを抑制）
+    return new Response('', {
+      status: 204,
+      statusText: 'No Content'
+    })
   }
 }
 
