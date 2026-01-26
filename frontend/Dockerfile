@@ -32,11 +32,16 @@ COPY --from=builder /app/dist /usr/share/nginx/html
 # Copy nginx configuration
 COPY nginx.conf /etc/nginx/nginx.conf
 
+# Test nginx configuration before switching to nginx user
+RUN nginx -t || (cat /etc/nginx/nginx.conf && exit 1)
+
 # Set proper permissions (nginx user already exists in nginx:alpine image)
 RUN chown -R nginx:nginx /usr/share/nginx/html && \
     chown -R nginx:nginx /var/cache/nginx && \
     chown -R nginx:nginx /var/log/nginx && \
-    chown -R nginx:nginx /etc/nginx/conf.d
+    chown -R nginx:nginx /etc/nginx/conf.d && \
+    mkdir -p /tmp && \
+    chown -R nginx:nginx /tmp
 
 # Switch to non-root user (nginx user already exists)
 USER nginx
