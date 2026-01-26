@@ -21,6 +21,29 @@ export const isOpenAIApiKeySet = (): boolean => {
 }
 
 /**
+ * 環境変数のデバッグ情報を取得（開発環境のみ）
+ * @returns 環境変数の状態情報
+ */
+export const getEnvDebugInfo = (): {
+  apiKeySet: boolean
+  apiKeyLength: number
+  apiKeyPrefix: string
+  mode: string
+  isProduction: boolean
+  isDevelopment: boolean
+} => {
+  const apiKey = getOpenAIApiKey()
+  return {
+    apiKeySet: isOpenAIApiKeySet(),
+    apiKeyLength: apiKey.length,
+    apiKeyPrefix: apiKey.length > 0 ? `${apiKey.substring(0, 7)}...` : '未設定',
+    mode: import.meta.env.MODE || 'unknown',
+    isProduction: isProduction(),
+    isDevelopment: isDevelopment()
+  }
+}
+
+/**
  * APIベースURLを取得
  * @returns APIベースURL
  */

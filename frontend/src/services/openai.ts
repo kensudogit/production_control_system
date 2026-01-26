@@ -63,6 +63,11 @@ class AdvancedOpenAIService {
 
   async generateAdvancedForecast(request: AIForecastRequest): Promise<AIForecastResponse> {
     try {
+      // APIキーの検証
+      if (!this.apiKey || this.apiKey.trim() === '' || this.apiKey === 'your-openai-api-key-here') {
+        throw new Error('OpenAI APIキーが設定されていません。環境変数 VITE_OPENAI_API_KEY を設定してください。')
+      }
+
       const prompt = this.buildAdvancedPrompt(request)
       
       const response = await fetch(`${this.baseURL}/chat/completions`, {
@@ -97,7 +102,16 @@ class AdvancedOpenAIService {
       })
 
       if (!response.ok) {
-        throw new Error(`OpenAI API error: ${response.status}`)
+        const errorData = await response.json().catch(() => ({}))
+        const errorMessage = errorData.error?.message || `HTTP ${response.status}`
+        
+        if (response.status === 401) {
+          throw new Error('OpenAI APIキーが無効です。Vercel Dashboardで環境変数 VITE_OPENAI_API_KEY を確認してください。')
+        } else if (response.status === 429) {
+          throw new Error('OpenAI APIのレート制限に達しました。しばらく待ってから再試行してください。')
+        } else {
+          throw new Error(`OpenAI APIエラー: ${errorMessage} (ステータス: ${response.status})`)
+        }
       }
 
       const data = await response.json()
@@ -106,7 +120,20 @@ class AdvancedOpenAIService {
       return this.parseAdvancedResponse(content, request)
     } catch (error) {
       console.error('高度なAI予測エラー:', error)
-      throw new Error('高度なAI予測の生成に失敗しました')
+      
+      // 既に詳細なエラーメッセージの場合はそのままスロー
+      if (error instanceof Error && error.message.includes('APIキー')) {
+        throw error
+      }
+      
+      // ネットワークエラーの場合
+      if (error instanceof TypeError && error.message.includes('fetch')) {
+        throw new Error('ネットワークエラーが発生しました。インターネット接続を確認してください。')
+      }
+      
+      // その他のエラー
+      const errorMessage = error instanceof Error ? error.message : '不明なエラー'
+      throw new Error(`高度なAI予測の生成に失敗しました: ${errorMessage}`)
     }
   }
 
@@ -370,8 +397,24 @@ export const getAdvancedOpenAIService = (apiKey?: string): AdvancedOpenAIService
   // APIキーが引数で渡されていない場合は環境変数から取得
   const key = apiKey || getOpenAIApiKey()
   
-  if (!key) {
-    throw new Error('OpenAI APIキーが設定されていません。環境変数 VITE_OPENAI_API_KEY を設定してください。')
+  // APIキーの検証
+  if (!key || key.trim() === '' || key === 'your-openai-api-key-here') {
+    const envKey = import.meta.env.VITE_OPENAI_API_KEY
+    console.error('OpenAI APIキーが設定されていません。', {
+      envKey: envKey ? `${envKey.substring(0, 10)}...` : 'undefined',
+      keyLength: key?.length || 0,
+      isProduction: import.meta.env.PROD,
+      mode: import.meta.env.MODE
+    })
+    throw new Error(
+      'OpenAI APIキーが設定されていません。\n\n' +
+      'Vercel Dashboardで環境変数を設定してください:\n' +
+      '1. Vercel Dashboard → プロジェクト → Settings → Environment Variables\n' +
+      '2. 変数名: VITE_OPENAI_API_KEY\n' +
+      '3. 値: あなたのOpenAI APIキー\n' +
+      '4. 環境: Production, Preview, Development すべてにチェック\n' +
+      '5. 設定後、再デプロイが必要です。'
+    )
   }
   
   // 既存のインスタンスが存在し、APIキーが変更された場合は再作成

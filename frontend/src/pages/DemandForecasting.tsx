@@ -18,6 +18,7 @@ import {
 } from 'lucide-react'
 import { getAdvancedOpenAIService, AIForecastRequest } from '../services/openai'
 import { dashboardApi, DemandForecast } from '../services/api'
+import { isOpenAIApiKeySet, getEnvDebugInfo } from '../utils/env'
 
 const DemandForecasting: React.FC = () => {
   const [showAIModal, setShowAIModal] = useState(false)
@@ -38,6 +39,20 @@ const DemandForecasting: React.FC = () => {
     leadTime: 14,
     supplierReliability: 95
   })
+
+  // 環境変数の状態確認（開発環境のみ）
+  useEffect(() => {
+    const debugInfo = getEnvDebugInfo()
+    console.log('🔍 環境変数の状態:', debugInfo)
+    
+    if (!isOpenAIApiKeySet()) {
+      console.warn(
+        '⚠️ OpenAI APIキーが設定されていません。\n' +
+        'Vercel Dashboardで環境変数 VITE_OPENAI_API_KEY を設定してください。\n' +
+        '設定後、再デプロイが必要です。'
+      )
+    }
+  }, [])
 
   // DBから需要予測データを取得
   const { data: forecastResponse, isLoading: isLoadingForecasts, error: forecastError } = useQuery(
@@ -236,7 +251,16 @@ const DemandForecasting: React.FC = () => {
       
     } catch (error) {
       console.error('高度なAI予測エラー:', error)
-      alert('AI予測の実行中にエラーが発生しました。詳細はコンソールで確認してください。')
+      
+      // エラーメッセージを詳細に表示
+      const errorMessage = error instanceof Error ? error.message : '不明なエラーが発生しました'
+      
+      // APIキー関連のエラーの場合は詳細なメッセージを表示
+      if (errorMessage.includes('APIキー') || errorMessage.includes('VITE_OPENAI_API_KEY')) {
+        alert(`❌ OpenAI APIキーの設定エラー\n\n${errorMessage}\n\n【解決方法】\n1. Vercel Dashboardにログイン\n2. プロジェクト → Settings → Environment Variables\n3. VITE_OPENAI_API_KEY を追加\n4. 再デプロイを実行`)
+      } else {
+        alert(`❌ AI予測の実行中にエラーが発生しました\n\n${errorMessage}\n\n詳細はブラウザのコンソール（F12）で確認してください。`)
+      }
     } finally {
       setIsAILoading(false)
       setShowAIModal(false)
