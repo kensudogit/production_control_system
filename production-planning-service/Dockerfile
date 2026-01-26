@@ -17,7 +17,7 @@ COPY production-planning-service/src/ src/
 RUN gradle build --no-daemon -x test
 
 # Runtime stage
-FROM openjdk:17-jre-slim
+FROM eclipse-temurin:17-jre
 
 RUN apt-get update && apt-get install -y \
     curl \

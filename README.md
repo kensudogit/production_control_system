@@ -155,6 +155,68 @@ Vercel Dashboardで設定：
 
 詳細は [VERCEL_DEPLOYMENT.md](VERCEL_DEPLOYMENT.md) を参照してください。
 
+### 🚂 Railwayクラウドデプロイ（完全公開モード）
+
+#### 方法1: Railway Dashboardからデプロイ（推奨・最も簡単）
+
+1. **Railwayアカウント作成**
+   - https://railway.app にアクセス
+   - 「Start a New Project」をクリック
+   - GitHubアカウントでログイン
+
+2. **プロジェクト作成**
+   - 「New Project」→「Deploy from GitHub repo」
+   - リポジトリ: `kensudogit/production_control_system` を選択
+   - 「Deploy Now」をクリック
+
+3. **サービスごとにデプロイ**
+   - フロントエンド: Root Directory `/frontend`, Dockerfile `frontend/Dockerfile`
+   - API Gateway: Root Directory `/api-gateway`, Dockerfile `api-gateway/Dockerfile`
+   - Auth Service: Root Directory `/auth-service`, Dockerfile `auth-service/Dockerfile`
+
+4. **環境変数の設定**
+   - Railway Dashboard → 各サービス → Variables
+   - 必要な環境変数を設定（`RAILWAY_DEPLOYMENT.md`を参照）
+
+5. **公開URLの生成**
+   - 各サービスの「Settings」→「Generate Domain」
+
+#### 方法2: Railway CLIを使用
+
+```powershell
+# 1. Railway CLIをインストール
+npm install -g @railway/cli
+
+# 2. ログイン
+railway login
+
+# 3. プロジェクトを初期化
+cd C:\devlop\production_control_system
+railway init
+railway link
+
+# 4. デプロイスクリプトを実行
+.\deploy-railway.ps1
+```
+
+#### 方法3: 手動デプロイ
+
+```powershell
+# フロントエンドをデプロイ
+cd frontend
+railway up
+
+# API Gatewayをデプロイ
+cd ../api-gateway
+railway up
+
+# Auth Serviceをデプロイ
+cd ../auth-service
+railway up
+```
+
+詳細は [RAILWAY_DEPLOYMENT.md](RAILWAY_DEPLOYMENT.md) と [RAILWAY_QUICK_START.md](RAILWAY_QUICK_START.md) を参照してください。
+
 ### ☁️ Vercel詳細設定
 
 #### Vercel機能

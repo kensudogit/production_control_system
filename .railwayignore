@@ -1,0 +1,63 @@
+# Railway ignore file
+# デプロイ時に除外するファイルとディレクトリ
+
+# Git関連
+.git
+.gitignore
+.github
+
+# ドキュメント
+*.md
+!README.md
+
+# スクリプト
+*.ps1
+*.sh
+*.bat
+
+# 設定ファイル（環境変数で管理）
+.env
+.env.local
+.env.*.local
+vercel.json
+vercel.production.json
+vercel.env.production
+
+# ログファイル
+*.log
+logs/
+
+# 一時ファイル
+*.tmp
+*.temp
+.DS_Store
+Thumbs.db
+
+# IDE設定
+.vscode
+.idea
+*.swp
+*.swo
+
+# テスト関連
+coverage/
+.nyc_output/
+test-results/
+
+# ビルド成果物（Dockerfileで再ビルド）
+node_modules/
+dist/
+build/
+target/
+.gradle/
+
+# Docker関連（Railwayで使用しない）
+docker-compose.yml
+docker-compose.dev.yml
+docker-manager.sh
+
+# 監視関連（Railwayでは別途設定）
+monitoring/
+
+# データベース初期化スクリプト（Railwayでは別途設定）
+database/

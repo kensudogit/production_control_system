@@ -12,7 +12,7 @@ COPY auth-service/src/ src/
 
 RUN gradle build --no-daemon -x test
 
-FROM openjdk:17-jre-slim
+FROM eclipse-temurin:17-jre
 
 RUN apt-get update && apt-get install -y \
     curl \
