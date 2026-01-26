@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   # Database
   postgres:
@@ -76,186 +74,186 @@ services:
       retries: 3
     restart: unless-stopped
 
-  # Production Planning Service
-  production-planning-service:
-    build:
-      context: .
-      dockerfile: production-planning-service/Dockerfile
-    container_name: production-control-planning
-    environment:
-      SPRING_PROFILES_ACTIVE: docker
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/production_control
-      SPRING_DATASOURCE_USERNAME: production_user
-      SPRING_DATASOURCE_PASSWORD: production_password
-      SPRING_REDIS_HOST: redis
-      SPRING_REDIS_PORT: 6379
-      SPRING_REDIS_PASSWORD: redis_password
-      EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://eureka:8761/eureka/
-    ports:
-      - "8081:8081"
-    networks:
-      - production-network
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8081/actuator/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-    restart: unless-stopped
+  # Production Planning Service (commented out - source code not available)
+  # production-planning-service:
+  #   build:
+  #     context: .
+  #     dockerfile: production-planning-service/Dockerfile
+  #   container_name: production-control-planning
+  #   environment:
+  #     SPRING_PROFILES_ACTIVE: docker
+  #     SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/production_control
+  #     SPRING_DATASOURCE_USERNAME: production_user
+  #     SPRING_DATASOURCE_PASSWORD: production_password
+  #     SPRING_REDIS_HOST: redis
+  #     SPRING_REDIS_PORT: 6379
+  #     SPRING_REDIS_PASSWORD: redis_password
+  #     EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://eureka:8761/eureka/
+  #   ports:
+  #     - "8081:8081"
+  #   networks:
+  #     - production-network
+  #   depends_on:
+  #     postgres:
+  #       condition: service_healthy
+  #     redis:
+  #       condition: service_healthy
+  #   healthcheck:
+  #     test: ["CMD", "curl", "-f", "http://localhost:8081/actuator/health"]
+  #     interval: 30s
+  #     timeout: 10s
+  #     retries: 3
+  #   restart: unless-stopped
 
-  # Inventory Management Service
-  inventory-management-service:
-    build:
-      context: .
-      dockerfile: inventory-management-service/Dockerfile
-    container_name: production-control-inventory
-    environment:
-      SPRING_PROFILES_ACTIVE: docker
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/production_control
-      SPRING_DATASOURCE_USERNAME: production_user
-      SPRING_DATASOURCE_PASSWORD: production_password
-      SPRING_REDIS_HOST: redis
-      SPRING_REDIS_PORT: 6379
-      SPRING_REDIS_PASSWORD: redis_password
-    ports:
-      - "8082:8082"
-    networks:
-      - production-network
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8082/actuator/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-    restart: unless-stopped
+  # Inventory Management Service (commented out - source code not available)
+  # inventory-management-service:
+  #   build:
+  #     context: .
+  #     dockerfile: inventory-management-service/Dockerfile
+  #   container_name: production-control-inventory
+  #   environment:
+  #     SPRING_PROFILES_ACTIVE: docker
+  #     SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/production_control
+  #     SPRING_DATASOURCE_USERNAME: production_user
+  #     SPRING_DATASOURCE_PASSWORD: production_password
+  #     SPRING_REDIS_HOST: redis
+  #     SPRING_REDIS_PORT: 6379
+  #     SPRING_REDIS_PASSWORD: redis_password
+  #   ports:
+  #     - "8082:8082"
+  #   networks:
+  #     - production-network
+  #   depends_on:
+  #     postgres:
+  #       condition: service_healthy
+  #     redis:
+  #       condition: service_healthy
+  #   healthcheck:
+  #     test: ["CMD", "curl", "-f", "http://localhost:8082/actuator/health"]
+  #     interval: 30s
+  #     timeout: 10s
+  #     retries: 3
+  #   restart: unless-stopped
 
-  # Process Management Service
-  process-management-service:
-    build:
-      context: .
-      dockerfile: process-management-service/Dockerfile
-    container_name: production-control-process
-    environment:
-      SPRING_PROFILES_ACTIVE: docker
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/production_control
-      SPRING_DATASOURCE_USERNAME: production_user
-      SPRING_DATASOURCE_PASSWORD: production_password
-      SPRING_REDIS_HOST: redis
-      SPRING_REDIS_PORT: 6379
-      SPRING_REDIS_PASSWORD: redis_password
-    ports:
-      - "8083:8083"
-    networks:
-      - production-network
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8083/actuator/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-    restart: unless-stopped
+  # Process Management Service (commented out - source code not available)
+  # process-management-service:
+  #   build:
+  #     context: .
+  #     dockerfile: process-management-service/Dockerfile
+  #   container_name: production-control-process
+  #   environment:
+  #     SPRING_PROFILES_ACTIVE: docker
+  #     SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/production_control
+  #     SPRING_DATASOURCE_USERNAME: production_user
+  #     SPRING_DATASOURCE_PASSWORD: production_password
+  #     SPRING_REDIS_HOST: redis
+  #     SPRING_REDIS_PORT: 6379
+  #     SPRING_REDIS_PASSWORD: redis_password
+  #   ports:
+  #     - "8083:8083"
+  #   networks:
+  #     - production-network
+  #   depends_on:
+  #     postgres:
+  #       condition: service_healthy
+  #     redis:
+  #       condition: service_healthy
+  #   healthcheck:
+  #     test: ["CMD", "curl", "-f", "http://localhost:8083/actuator/health"]
+  #     interval: 30s
+  #     timeout: 10s
+  #     retries: 3
+  #   restart: unless-stopped
 
-  # Quality Management Service
-  quality-management-service:
-    build:
-      context: .
-      dockerfile: quality-management-service/Dockerfile
-    container_name: production-control-quality
-    environment:
-      SPRING_PROFILES_ACTIVE: docker
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/production_control
-      SPRING_DATASOURCE_USERNAME: production_user
-      SPRING_DATASOURCE_PASSWORD: production_password
-      SPRING_REDIS_HOST: redis
-      SPRING_REDIS_PORT: 6379
-      SPRING_REDIS_PASSWORD: redis_password
-    ports:
-      - "8084:8084"
-    networks:
-      - production-network
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8084/actuator/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-    restart: unless-stopped
+  # Quality Management Service (commented out - source code not available)
+  # quality-management-service:
+  #   build:
+  #     context: .
+  #     dockerfile: quality-management-service/Dockerfile
+  #   container_name: production-control-quality
+  #   environment:
+  #     SPRING_PROFILES_ACTIVE: docker
+  #     SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/production_control
+  #     SPRING_DATASOURCE_USERNAME: production_user
+  #     SPRING_DATASOURCE_PASSWORD: production_password
+  #     SPRING_REDIS_HOST: redis
+  #     SPRING_REDIS_PORT: 6379
+  #     SPRING_REDIS_PASSWORD: redis_password
+  #   ports:
+  #     - "8084:8084"
+  #   networks:
+  #     - production-network
+  #   depends_on:
+  #     postgres:
+  #       condition: service_healthy
+  #     redis:
+  #       condition: service_healthy
+  #   healthcheck:
+  #     test: ["CMD", "curl", "-f", "http://localhost:8084/actuator/health"]
+  #     interval: 30s
+  #     timeout: 10s
+  #     retries: 3
+  #   restart: unless-stopped
 
-  # Cost Management Service
-  cost-management-service:
-    build:
-      context: .
-      dockerfile: cost-management-service/Dockerfile
-    container_name: production-control-cost
-    environment:
-      SPRING_PROFILES_ACTIVE: docker
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/production_control
-      SPRING_DATASOURCE_USERNAME: production_user
-      SPRING_DATASOURCE_PASSWORD: production_password
-      SPRING_REDIS_HOST: redis
-      SPRING_REDIS_PORT: 6379
-      SPRING_REDIS_PASSWORD: redis_password
-    ports:
-      - "8085:8085"
-    networks:
-      - production-network
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8085/actuator/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-    restart: unless-stopped
+  # Cost Management Service (commented out - source code not available)
+  # cost-management-service:
+  #   build:
+  #     context: .
+  #     dockerfile: cost-management-service/Dockerfile
+  #   container_name: production-control-cost
+  #   environment:
+  #     SPRING_PROFILES_ACTIVE: docker
+  #     SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/production_control
+  #     SPRING_DATASOURCE_USERNAME: production_user
+  #     SPRING_DATASOURCE_PASSWORD: production_password
+  #     SPRING_REDIS_HOST: redis
+  #     SPRING_REDIS_PORT: 6379
+  #     SPRING_REDIS_PASSWORD: redis_password
+  #   ports:
+  #     - "8085:8085"
+  #   networks:
+  #     - production-network
+  #   depends_on:
+  #     postgres:
+  #       condition: service_healthy
+  #     redis:
+  #       condition: service_healthy
+  #   healthcheck:
+  #     test: ["CMD", "curl", "-f", "http://localhost:8085/actuator/health"]
+  #     interval: 30s
+  #     timeout: 10s
+  #     retries: 3
+  #   restart: unless-stopped
 
-  # Demand Forecasting Service
-  demand-forecasting-service:
-    build:
-      context: .
-      dockerfile: demand-forecasting-service/Dockerfile
-    container_name: production-control-demand
-    environment:
-      SPRING_PROFILES_ACTIVE: docker
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/production_control
-      SPRING_DATASOURCE_USERNAME: production_user
-      SPRING_DATASOURCE_PASSWORD: production_password
-      SPRING_REDIS_HOST: redis
-      SPRING_REDIS_PORT: 6379
-      SPRING_REDIS_PASSWORD: redis_password
-    ports:
-      - "8086:8086"
-    networks:
-      - production-network
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8086/actuator/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-    restart: unless-stopped
+  # Demand Forecasting Service (commented out - source code not available)
+  # demand-forecasting-service:
+  #   build:
+  #     context: .
+  #     dockerfile: demand-forecasting-service/Dockerfile
+  #   container_name: production-control-demand
+  #   environment:
+  #     SPRING_PROFILES_ACTIVE: docker
+  #     SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/production_control
+  #     SPRING_DATASOURCE_USERNAME: production_user
+  #     SPRING_DATASOURCE_PASSWORD: production_password
+  #     SPRING_REDIS_HOST: redis
+  #     SPRING_REDIS_PORT: 6379
+  #     SPRING_REDIS_PASSWORD: redis_password
+  #   ports:
+  #     - "8086:8086"
+  #   networks:
+  #     - production-network
+  #   depends_on:
+  #     postgres:
+  #       condition: service_healthy
+  #     redis:
+  #       condition: service_healthy
+  #   healthcheck:
+  #     test: ["CMD", "curl", "-f", "http://localhost:8086/actuator/health"]
+  #     interval: 30s
+  #     timeout: 10s
+  #     retries: 3
+  #   restart: unless-stopped
 
   # Auth Service
   auth-service:
@@ -271,7 +269,7 @@ services:
       SPRING_REDIS_HOST: redis
       SPRING_REDIS_PORT: 6379
       SPRING_REDIS_PASSWORD: redis_password
-      JWT_SECRET: ${JWT_SECRET:your-256-bit-secret-key-change-this-in-production-environment}
+      JWT_SECRET: ${JWT_SECRET:-your-256-bit-secret-key-change-this-in-production-environment}
     ports:
       - "8087:8087"
     networks:

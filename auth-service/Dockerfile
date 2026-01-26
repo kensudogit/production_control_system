@@ -3,8 +3,8 @@ FROM gradle:8.5-jdk17 AS builder
 
 WORKDIR /app
 
-COPY auth-service/build.gradle auth-service/settings.gradle ./
-COPY auth-service/gradle/ gradle/
+# Copy gradle files
+COPY auth-service/build.gradle ./
 
 RUN gradle dependencies --no-daemon
 

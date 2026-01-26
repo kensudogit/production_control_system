@@ -11,11 +11,14 @@ COPY package*.json ./
 # Install dependencies (use all dependencies for build)
 RUN npm ci
 
+# Ensure execute permissions for binaries immediately after npm ci
+RUN find node_modules/.bin -type f -exec chmod +x {} \; 2>/dev/null || true
+
 # Copy source code
 COPY . ./
 
-# Build application (skip TypeScript check to avoid permission issues)
-RUN npm run build:skip-check
+# Build application (use npx to avoid permission issues with vite binary)
+RUN npx vite build
 
 # Production stage
 FROM nginx:alpine
@@ -29,17 +32,13 @@ COPY --from=builder /app/dist /usr/share/nginx/html
 # Copy nginx configuration
 COPY nginx.conf /etc/nginx/nginx.conf
 
-# Create nginx user
-RUN addgroup -g 1001 -S nginx && \
-    adduser -S -D -H -u 1001 -h /var/cache/nginx -s /sbin/nologin -G nginx -g nginx nginx
-
-# Set proper permissions
+# Set proper permissions (nginx user already exists in nginx:alpine image)
 RUN chown -R nginx:nginx /usr/share/nginx/html && \
     chown -R nginx:nginx /var/cache/nginx && \
     chown -R nginx:nginx /var/log/nginx && \
     chown -R nginx:nginx /etc/nginx/conf.d
 
-# Switch to non-root user
+# Switch to non-root user (nginx user already exists)
 USER nginx
 
 # Health check
