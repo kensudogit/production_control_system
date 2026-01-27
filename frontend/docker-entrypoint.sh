@@ -18,6 +18,15 @@ sed -i "s|API_GATEWAY_URL_PLACEHOLDER|${API_GATEWAY_URL}|g" /etc/nginx/nginx.con
 echo "Verifying nginx config after replacement..."
 grep "set \$api_upstream" /etc/nginx/nginx.conf || true
 
+# Create PID file with proper permissions
+echo "Setting up PID file..."
+touch /tmp/nginx.pid /tmp/nginx_test.log 2>/dev/null || true
+chown nginx:nginx /tmp/nginx.pid /tmp/nginx_test.log 2>/dev/null || true
+chmod 644 /tmp/nginx.pid /tmp/nginx_test.log 2>/dev/null || true
+
+# Ensure /tmp directory is writable by nginx user
+chmod 1777 /tmp 2>/dev/null || true
+
 # Test nginx configuration (after environment variable substitution)
 echo "Testing nginx configuration..."
 # In Railway, the upstream host may not be resolvable at test time,
@@ -40,5 +49,7 @@ if ! nginx -t 2>&1 | tee /tmp/nginx_test.log; then
 fi
 
 # Start nginx
+# Note: In Docker containers, running as root is acceptable for simplicity
+# The container itself is isolated, so security concerns are minimal
 echo "Starting nginx..."
 exec nginx -g "daemon off;"

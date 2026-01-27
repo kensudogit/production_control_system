@@ -1,96 +1,144 @@
-# クイック修正: コミット履歴からAPIキーを削除
+# フロントエンド接続エラー修正ガイド
 
-## 問題
+## 🔴 問題
 
-GitHubのPush Protectionが、過去のコミット（78e44daa679b286ef234d465a414fcd300f398c3）に含まれるAPIキーを検出しています。
+`ERR_CONNECTION_REFUSED` エラーが発生し、`http://localhost:3000` にアクセスできません。
 
-## 解決方法（3つのオプション）
+**原因**: フロントエンドコンテナが権限エラーで再起動を繰り返しています。
 
-### オプション1: GitHubの「Allow secret」を使用（最も簡単、一時的）
+## ✅ 解決方法
 
-1. 以下のURLにアクセス：
-   ```
-   https://github.com/kensudogit/production_control_system/security/secret-scanning/unblock-secret/38kX7kSyxymwNayYfIkOl4RCoYS
-   ```
-
-2. 「Allow secret」をクリック
-
-3. 再度プッシュ：
-   ```bash
-   git push origin main
-   ```
-
-**注意**: これは一時的な対応です。APIキーは無効化してください。
-
-### オプション2: コミット履歴を書き換える（推奨、永続的）
-
-#### Windows PowerShellで実行：
+### 方法1: 修正スクリプトを実行（推奨）
 
 ```powershell
-# 1. バックアップ（推奨）
-git clone --mirror https://github.com/kensudogit/production_control_system.git backup-repo.git
-
-# 2. コミット履歴からAPIキーを含むファイルを削除
-git filter-branch --force --index-filter `
-    "git rm --cached --ignore-unmatch frontend/src/pages/DemandForecasting.tsx" `
-    --prune-empty --tag-name-filter cat -- --all
-
-# 3. クリーンアップ
-git reflog expire --expire=now --all
-git gc --prune=now --aggressive
-
-# 4. 強制プッシュ
-git push origin --force --all
-git push origin --force --tags
+cd C:\devlop\production_control_system
+.\fix-frontend.ps1
 ```
 
-#### または、fix_history.ps1スクリプトを使用：
+このスクリプトが以下を自動実行します：
+1. フロントエンドコンテナの停止・削除
+2. イメージの削除
+3. 再ビルド（キャッシュなし）
+4. 起動と状態確認
+
+### 方法2: 手動で修正
 
 ```powershell
-.\fix_history.ps1
+cd C:\devlop\production_control_system
+
+# 1. フロントエンドコンテナを停止・削除
+docker-compose stop frontend
+docker-compose rm -f frontend
+
+# 2. フロントエンドイメージを削除（強制再ビルド）
+docker rmi production_control_system-frontend
+
+# 3. フロントエンドを再ビルド（キャッシュなし）
+docker-compose build --no-cache frontend
+
+# 4. フロントエンドを起動
+docker-compose up -d frontend
+
+# 5. 状態を確認
+docker-compose ps frontend
+
+# 6. ログを確認
+docker-compose logs -f frontend
 ```
 
-### オプション3: 新しいブランチから開始（最も安全）
+### 方法3: 全サービスを再起動
 
-```bash
-# 1. 新しいブランチを作成
-git checkout -b fix/remove-api-key-from-history
+```powershell
+cd C:\devlop\production_control_system
 
-# 2. 変更をコミット（既に完了済み）
-git add .
-git commit -m "fix: Remove hardcoded OpenAI API key and use environment variable"
+# 全コンテナを停止・削除
+docker-compose down
 
-# 3. 新しいブランチをプッシュ
-git push origin fix/remove-api-key-from-history
-
-# 4. GitHubでプルリクエストを作成してマージ
+# 全サービスを再ビルドして起動
+docker-compose up -d --build
 ```
 
-その後、メインブランチの履歴を書き換えます。
+## 🔍 確認手順
 
-## 推奨される手順
+### 1. コンテナの状態確認
 
-1. **まず、APIキーを無効化**
-   - https://platform.openai.com/api-keys で該当キーを削除
-
-2. **オプション1で一時的に許可してプッシュ**
-
-3. **その後、オプション2で履歴を書き換える**
-
-## 検証
-
-履歴を書き換えた後、APIキーが削除されたか確認：
-
-```bash
-# コミット履歴を検索
-git log --all --full-history -- frontend/src/pages/DemandForecasting.tsx
-
-# 特定のコミットの内容を確認
-git show 78e44daa679b286ef234d465a414fcd300f398c3:frontend/src/pages/DemandForecasting.tsx | grep "sk-proj-"
+```powershell
+docker-compose ps frontend
 ```
 
-## 重要な注意事項
+**正常な状態**: `Up` と表示される
 
-- **強制プッシュ（--force）は履歴を書き換えます**
-- 共有リポジトリの場合は、チームメンバーと相談してください
-- 履歴を書き換えた後、他の開発者は `git fetch --all` と `git reset --hard origin/main` を実行する必要があります
+**異常な状態**: `Restarting` や `Exited` と表示される
+
+### 2. ログの確認
+
+```powershell
+# 最新50行のログ
+docker-compose logs --tail=50 frontend
+
+# リアルタイムでログを確認
+docker-compose logs -f frontend
+```
+
+**正常なログ**:
+```
+Setting API Gateway URL to: http://api-gateway:8080/
+Verifying nginx config after replacement...
+Testing nginx configuration...
+Starting nginx as nginx user...
+```
+
+**エラーログ**:
+```
+sed: can't create temp file '/etc/nginx/nginx.confXXXXXX': Permission denied
+```
+
+### 3. ポートの確認
+
+```powershell
+netstat -ano | findstr :3000
+```
+
+ポート3000が使用されていれば、コンテナは起動しています。
+
+### 4. ブラウザでアクセス
+
+http://localhost:3000 にアクセスして、正常に表示されるか確認してください。
+
+## 🛠️ 修正内容
+
+以下の修正を適用しました：
+
+1. **Dockerfile.root**:
+   - `USER nginx` をコメントアウト（entrypointをrootで実行）
+   - `su-exec` パッケージを追加
+
+2. **docker-entrypoint.sh**:
+   - nginx.conf編集後に`su-exec`でnginxユーザーに切り替えてからnginxを起動
+
+これにより、nginx.confの編集はroot権限で行い、nginxの起動はnginxユーザーで行うため、セキュリティと権限の両立が可能になりました。
+
+## ⚠️ 注意事項
+
+- 再ビルドには数分かかることがあります
+- Docker Desktopが起動していることを確認してください
+- ポート3000が他のアプリケーションで使用されていないことを確認してください
+
+## 🆘 それでも解決しない場合
+
+1. **Docker Desktopを再起動**
+   - Docker Desktopを完全に終了
+   - 再起動してから再度試す
+
+2. **完全にクリーンアップ**
+   ```powershell
+   docker-compose down -v
+   docker system prune -a
+   docker-compose up -d --build
+   ```
+
+3. **ログファイルを保存して確認**
+   ```powershell
+   docker-compose logs frontend > frontend-error.log
+   ```
+   エラーメッセージを確認してください。

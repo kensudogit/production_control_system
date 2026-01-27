@@ -453,7 +453,9 @@ volumes:
 networks:
   production-network:
     driver: bridge
-    ipam:
-      config:
-        - subnet: 172.20.0.0/16
+    # IPAM設定を削除してDockerに自動割り当てさせる（競合を回避）
+    # または、別のサブネットを使用する場合は以下をコメントアウトして有効化
+    # ipam:
+    #   config:
+    #     - subnet: 172.25.0.0/16
 
