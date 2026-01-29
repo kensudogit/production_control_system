@@ -708,4 +708,4 @@ cd api-gateway
 
 - **Issues**: [GitHub Issues](https://github.com/your-org/production-control-system/issues)
 - **Discussions**: [GitHub Discussions](https://github.com/your-org/production-control-system/discussions)
-- **Email**: support@production-control.local
+- **Email**: support@production-control.local"# Crowdfinding" 
